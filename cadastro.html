@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - SecureScanner</title>
+    <style>
+        /* Estilos CSS Globais e de Elementos Comuns */
+        * {
+            /* Reseta margens e paddings padrão do navegador para todos os elementos,
+               garantindo um controle mais consistente do layout. */
+            margin: 0;
+            padding: 0;
+            /* Garante que padding e borda sejam incluídos na largura e altura total do elemento,
+               facilitando o cálculo de layouts. */
+            box-sizing: border-box;
+            /* Define a fonte padrão para todo o documento, priorizando fontes modernas e legíveis. */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            /* Cor de fundo suave para a página. */
+            background-color: #f5f7fa;
+            /* Garante que o corpo ocupe pelo menos 100% da altura da viewport,
+               útil para layouts que precisam de um footer fixo ou conteúdo centralizado. */
+            min-height: 100vh;
+            /* Usa Flexbox para organizar o conteúdo verticalmente. */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Estilos para a Barra de Navegação */
+        .navbar {
+            /* Cor de fundo escura para a barra de navegação. */
+            background-color: #1a2238;
+            /* Cor do texto branca para contraste. */
+            color: white;
+            /* Padding interno para espaçamento do conteúdo. */
+            padding: 1rem 2rem;
+            /* Usa Flexbox para alinhar itens na barra (logo à esquerda, links à direita). */
+            display: flex;
+            /* Distribui o espaço entre os itens. */
+            justify-content: space-between;
+            /* Alinha os itens verticalmente ao centro. */
+            align-items: center;
+        }
+
+        /* Estilos para o Logo na Barra de Navegação */
+        .logo {
+            /* Usa Flexbox para alinhar o ícone e o texto do logo. */
+            display: flex;
+            /* Espaçamento entre o ícone e o texto. */
+            gap: 0.5rem;
+            /* Tamanho da fonte e negrito para destaque. */
+            font-size: 1.5rem;
+            font-weight: bold;
+            /* Remove sublinhado e define a cor do texto para links. */
+            text-decoration: none;
+            color: white;
+        }
+
+        /* Estilos para o Ícone dentro do Logo */
+        .logo-icon {
+            /* Fundo branco e cor de texto azul para o ícone, criando um contraste. */
+            background-color: white;
+            color: #4169e1;
+            /* Define largura, altura e raio da borda para criar um círculo. */
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            /* Usa Flexbox para centralizar o SVG dentro do círculo. */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Estilos para Links de Navegação (se houver, neste caso não há na navbar mas a classe existe) */
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+        }
+
+        .nav-link:hover {
+            /* Efeito de hover para dar feedback visual. */
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Estilos para o Container Principal do Formulário */
+        .container {
+            /* Largura máxima para o conteúdo centralizado. */
+            max-width: 550px;
+            /* Garante que o container ocupe a largura total disponível em telas menores. */
+            width: 100%;
+            /* Margens superior e inferior automáticas para centralizar horizontalmente. */
+            margin: 3rem auto;
+            /* Padding interno. */
+            padding: 2rem;
+            /* Fundo branco para o container. */
+            background-color: white;
+            /* Cantos arredondados. */
+            border-radius: 8px;
+            /* Sombra para dar profundidade e destaque. */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Estilos para o Cabeçalho do Formulário de Registro */
+        .register-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .register-header h1 {
+            color: #1a2238;
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .register-header p {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        /* Estilos para Grupos de Formulário (Label + Input) */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            /* Transforma o label em um bloco para ocupar sua própria linha. */
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        /* Estilos para Controles de Formulário (Inputs) */
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1rem;
+            /* Transição suave para efeitos de foco. */
+            transition: border-color 0.15s ease-in-out;
+        }
+
+        .form-control:focus {
+            /* Estilo da borda e sombra ao focar no input. */
+            border-color: #4169e1;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(65, 105, 225, 0.25);
+        }
+
+        /* Estilos para Linhas de Formulário (para inputs lado a lado) */
+        .form-row {
+            display: flex;
+            gap: 1rem; /* Espaçamento entre os grupos de formulário na linha. */
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row .form-group {
+            /* Cada grupo de formulário ocupa o espaço disponível igualmente na linha. */
+            flex: 1;
+            margin-bottom: 0; /* Remove a margem inferior para não criar espaço extra na linha. */
+        }
+
+        /* Estilos para Checkboxes */
+        .form-check {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-check-input {
+            margin-right: 0.5rem;
+            width: 16px;
+            height: 16px;
+        }
+
+        .form-check-label {
+            color: #495057;
+            font-size: 0.95rem;
+        }
+
+        .form-check-label a {
+            color: #4169e1;
+            text-decoration: none;
+        }
+
+        .form-check-label a:hover {
+            text-decoration: underline;
+        }
+
+        /* Estilos para Requisitos de Senha */
+        .password-requirements {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        /* Estilos para Botões Gerais */
+        .btn {
+            display: inline-block;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            user-select: none;
+            border: 1px solid transparent;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-radius: 4px;
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+            width: 100%; /* Botões ocupam 100% da largura do contêiner. */
+        }
+
+        /* Estilos para o Botão Primário (Criar Conta) */
+        .btn-primary {
+            color: white;
+            background-color:  #171f35; /* Cor de fundo escura. */
+            border-color:  #171f35; /* Cor da borda igual ao fundo. */
+        }
+
+        .btn-primary:hover {
+            background-color:  #253563; /* Cor mais escura ao passar o mouse. */
+            border-color:  #253563;
+        }
+
+        /* Estilos para o Botão Secundário (Voltar) */
+        .btn-secondary {
+            color: #6c757d;
+            background-color: #f0f0f0;
+            border-color: #f0f0f0;
+            margin-top: 0.5rem; /* Margem superior para separar do botão primário. */
+        }
+
+        .btn-secondary:hover {
+            background-color: #e2e2e2;
+            border-color: #e2e2e2;
+        }
+
+        /* Estilos para o Link de Login (se já tem conta) */
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .login-link a {
+            color: #4169e1;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Estilos para Mensagens de Alerta (geral) */
+        .alert {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            display: none; /* Por padrão, oculto. Será exibido via JavaScript. */
+        }
+        /* Estilos para o segundo tipo de alerta (sucesso) */
+        .alert2 {
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-weight: 500;
+            text-align: center;
+            display: none; /* Por padrão, oculto. */
+        }
+
+        /* Estilos específicos para Alerta de Perigo (Erros) */
+        .alert-danger {
+            color: #721c24; /* Cor do texto. */
+            background-color: #f8d7da; /* Cor de fundo suave. */
+            border-color: #f5c6cb; /* Cor da borda. */
+        }
+        /* Estilos específicos para Alerta de Sucesso */
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        /* Media Queries para Responsividade (Telas Menores) */
+        @media (max-width: 768px) {
+            .form-row {
+                /* Em telas menores, os inputs do form-row se empilham verticalmente. */
+                flex-direction: column;
+                gap: 0; /* Remove o espaçamento lateral entre eles. */
+            }
+            
+            .container {
+                margin: 2rem auto;
+                padding: 1.5rem; /* Ajusta o padding para telas menores. */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra de Navegação -->
+    <nav class="navbar">
+        <a href="#" class="logo">
+            <div class="logo-icon">
+                <!-- Ícone SVG para o logo (um cadeado/escudo de segurança) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                </svg>
+            </div>
+            SecureScanner
+        </a>
+      
+    </nav>
+
+    <!-- Container Principal do Formulário -->
+    <div class="container">
+        <div class="register-header">
+          <h1>Criar Conta</h1>
+          <p>Preencha o formulário abaixo para se registrar no SecureScanner</p>
+        </div>
+        
+        <!-- Mensagem de Erro (oculta por padrão) -->
+        <div class="alert alert-danger" id="error-message" style="display: none;">
+          Por favor, corrija os erros no formulário antes de continuar.
+        </div>
+
+        <!-- Mensagem de Sucesso (oculta por padrão) -->
+        <div class="alert2 alert-success" id="success-message">
+          Conta criada com sucesso! Verifique seu e-mail para ativar a conta.
+        </div>
+        
+        <!-- Formulário de Registro -->
+        <form id="register-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="first-name">Nome</label>
+              <input type="text" class="form-control" id="first-name" placeholder="Seu nome" required>
+            </div>
+            <div class="form-group">
+              <label for="last-name">Sobrenome</label>
+              <input type="text" class="form-control" id="last-name" placeholder="Seu sobrenome" required>
+            </div>
+          </div>
+        
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" class="form-control" id="email" placeholder="seu@email.com" required>
+          </div>
+        
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <input type="password" class="form-control" id="password" placeholder="Crie uma senha forte" required>
+            <div class="password-requirements">
+              A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.
+            </div>
+          </div>
+        
+          <div class="form-group">
+            <label for="confirm-password">Confirmar Senha</label>
+            <input type="password" class="form-control" id="confirm-password" placeholder="Confirme sua senha" required>
+          </div>
+        
+          <button type="submit" class="btn btn-primary">Criar Conta</button>
+          <a href="index.html">
+            <button type="button" class="btn btn-secondary" id="back-button">Voltar</button>
+          </a>
+        </form>
+        
+        <!-- Link para a Página de Login -->
+        <div class="login-link">
+          Já tem uma conta? <a href="index.html">Entrar</a>
+        </div>
+      </div>
+      
+      <!-- Firebase SDK (módulo) e script de cadastro -->
+      <script type="module">
+        // Importações dos módulos do Firebase SDK.
+        // O `type="module"` permite usar `import` e `export` no JavaScript do navegador.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";
+        import {
+          getAuth,
+          createUserWithEmailAndPassword,
+          updateProfile,
+          sendEmailVerification
+        } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+        import {
+          getFirestore,
+          doc,
+          setDoc
+        } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+        // Configurações do seu projeto Firebase.
+        // Estes dados são fornecidos pelo console do Firebase quando você configura um aplicativo web.
+        const firebaseConfig = {
+          apiKey: "AIzaSyAnA0X3VK1jW4Gv2lkJ_Cp4g7jL1hQ36u4",
+          authDomain: "scanner-c65ce.firebaseapp.com",
+          projectId: "scanner-c65ce",
+          storageBucket: "scanner-c65ce.firebasestorage.app",
+          messagingSenderId: "731199717476",
+          appId: "1:731199717476:web:7d03c2f4acf2f06d5d5f71",
+          measurementId: "G-R6QW0YRC58"
+        };
+
+        // Inicializa o aplicativo Firebase com as configurações fornecidas.
+        const app = initializeApp(firebaseConfig);
+        // Obtém o serviço de Analytics.
+        const analytics = getAnalytics(app);
+        // Obtém o serviço de Autenticação do Firebase.
+        const auth = getAuth(app);
+        // Obtém o serviço do Firestore (banco de dados NoSQL do Firebase).
+        const db = getFirestore(app);
+
+        // Obtém referências aos elementos do DOM.
+        const form = document.getElementById("register-form");
+        const errorDiv = document.getElementById("error-message");
+        const successDiv = document.getElementById("success-message"); // Referência à div de sucesso
+
+        // Adiciona um listener de evento para o envio do formulário.
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault(); // Impede o comportamento padrão de recarregamento da página ao enviar o formulário.
+
+          // Obtém os valores dos campos de entrada, removendo espaços em branco extras com .trim().
+          const nome = document.getElementById("first-name").value.trim();
+          const sobrenome = document.getElementById("last-name").value.trim();
+          const email = document.getElementById("email").value.trim();
+          const senha = document.getElementById("password").value;
+          const confirmarSenha = document.getElementById("confirm-password").value;
+
+          // Expressão regular para validar a força da senha:
+          // ^                 - Início da string
+          // (?=.*[a-z])       - Pelo menos uma letra minúscula
+          // (?=.*[A-Z])       - Pelo menos uma letra maiúscula
+          // (?=.*\d)          - Pelo menos um dígito
+          // (?=.*[\W_])       - Pelo menos um caractere especial (não alfanumérico, incluindo underscore)
+          // .{8,}             - Pelo menos 8 caracteres de comprimento
+          // $                 - Fim da string
+          const senhaForte = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+          // Oculta mensagens de erro anteriores.
+          errorDiv.style.display = "none";
+          successDiv.style.display = "none"; // Garante que a mensagem de sucesso esteja oculta no início da submissão.
+
+          // Validação: as senhas devem coincidir.
+          if (senha !== confirmarSenha) {
+            errorDiv.textContent = "As senhas não coincidem.";
+            errorDiv.style.display = "block"; // Exibe a mensagem de erro.
+            return; // Interrompe a execução da função.
+          }
+
+          // Validação: a senha deve atender aos requisitos de força.
+          if (!senhaForte.test(senha)) {
+            errorDiv.textContent = "A senha não atende aos requisitos de segurança.";
+            errorDiv.style.display = "block"; // Exibe a mensagem de erro.
+            return; // Interrompe a execução da função.
+          }
+
+          try {
+            // Tenta criar um novo usuário com e-mail e senha no Firebase Authentication.
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user; // Obtém o objeto do usuário criado.
+
+            // Atualiza o perfil do usuário recém-criado com o nome e sobrenome.
+            await updateProfile(user, {
+              displayName: `${nome} ${sobrenome}`
+            });
+
+            // Envia um e-mail de verificação para o endereço de e-mail do usuário.
+            await sendEmailVerification(user);
+            
+            // Salva dados adicionais do usuário no Firestore.
+            // Cria um documento na coleção "Users" com o UID do usuário como ID do documento.
+            await setDoc(doc(db, "Users", user.uid), {
+              nome: nome,
+              sobrenome: sobrenome,
+              email: email,
+              uid: user.uid,
+              emailVerificado: user.emailVerified, // Indica se o e-mail foi verificado (neste ponto, será false).
+              criadoEm: new Date() // Timestamp da criação da conta.
+            });
+
+            // Exibe a mensagem de sucesso.
+            successDiv.style.display = "block";
+
+            // Espera 3 segundos antes de redirecionar para a página de login (index.html).
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 3000);
+          } catch (error) {
+            // Em caso de erro durante o processo de criação de conta no Firebase,
+            // exibe a mensagem de erro para o usuário.
+            errorDiv.textContent = error.message;
+            errorDiv.style.display = "block";
+          }
+        });
+
+      </script>
+      
+</body>
+</html>
