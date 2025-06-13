@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureScanner Login</title>
+  <style>
+    /* Importa a fonte 'Inter' do Google Fonts para uso no design da página. */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap');
+
+    /* Reset de estilos padrão para garantir consistência em todos os navegadores. */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box; /* Garante que padding e borda sejam incluídos na largura e altura total do elemento. */
+    }
+
+    /* Estilos para o corpo da página (layout principal). */
+    body {
+      font-family: 'Inter', sans-serif; /* Aplica a fonte importada. */
+      display: flex; /* Usa Flexbox para criar um layout flexível. */
+      height: 100vh; /* Ocupa 100% da altura da viewport. */
+      width: 100vw; /* Ocupa 100% da largura da viewport. */
+    }
+
+    /* Estilos para o painel esquerdo (informações sobre o SecureScanner). */
+    .left-panel {
+      flex: 1; /* Permite que o painel ocupe o espaço disponível. */
+      background-color: #171f35; /* Cor de fundo escura. */
+      color: white; /* Cor do texto. */
+      padding: 60px 50px; /* Espaçamento interno. */
+      display: flex; /* Usa Flexbox para organizar o conteúdo verticalmente. */
+      flex-direction: column;
+      justify-content: center; /* Centraliza o conteúdo verticalmente. */
+      /* Efeito de fundo com pontos radiais, criando uma textura sutil. */
+      background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Estilos para o logo dentro do painel esquerdo. */
+    .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    /* Estilos específicos para o logo na seção de login. */
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem; /* Espaçamento entre o ícone e o texto. */
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+    }
+
+    /* Estilos para o ícone dentro do logo de login. */
+    .login-logo-icon {
+      width: 40px;
+      height: 40px;
+      background-color: white; /* Fundo branco para o ícone. */
+      color: var(--primary); /* Variável CSS para a cor primária (se definida, senão use o fallback). */
+      border-radius: 50%; /* Torna o ícone circular. */
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Centraliza o SVG dentro do círculo. */
+    }
+
+    /* Estilo para a cor do ícone SVG. */
+    .icon {
+      color: #2563eb; /* Azul para o ícone. */
+    }
+
+    /* Estilos para o título principal no painel esquerdo. */
+    .left-panel h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+
+    /* Estilos para parágrafos no painel esquerdo. */
+    .left-panel p {
+      font-size: 16px;
+      margin-bottom: 30px;
+      line-height: 1.5; /* Espaçamento entre linhas. */
+    }
+
+    /* Estilos para a lista de recursos no painel esquerdo. */
+    .features {
+      list-style: none; /* Remove os marcadores de lista padrão. */
+    }
+
+    /* Estilos para cada item de recurso individual. */
+    .login-feature {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Estilos para o ícone dentro de cada item de recurso. */
+    .login-feature-icon {
+      width: 24px;
+      height: 24px;
+      background-color: rgba(255, 255, 255, 0.2); /* Fundo branco semi-transparente. */
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0; /* Impede que o ícone diminua. */
+    }
+
+    /* Estilos para o painel direito (formulário de login). */
+    .right-panel {
+      flex: 1; /* Permite que o painel ocupe o espaço disponível. */
+      background-color: #f9fafb; /* Cor de fundo clara. */
+      display: flex;
+      justify-content: center; /* Centraliza o conteúdo horizontalmente. */
+      align-items: center; /* Centraliza o conteúdo verticalmente. */
+      padding: 20px; /* Espaçamento interno. */
+    }
+
+    /* Estilos para mensagens de alerta (geral). */
+    .alert {
+      padding: 12px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      text-align: center;
+      opacity: 0; /* Oculto por padrão, com transição. */
+      transform: translateY(-10px); /* Posição inicial para o efeito de entrada. */
+      transition: opacity 0.4s ease, transform 0.4s ease; /* Transição suave para opacidade e posição. */
+    }
+
+    /* Classe para exibir a mensagem de alerta. */
+    .alert.show {
+      opacity: 1; /* Torna visível. */
+      transform: translateY(0); /* Move para a posição final. */
+    }
+
+    /* Estilos específicos para alertas de perigo (erros). */
+    .alert-danger {
+      background-color: #f8d7da; /* Cor de fundo. */
+      color: #721c24; /* Cor do texto. */
+    }
+    
+    /* Estilos para o container do formulário. */
+    .form-container {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05); /* Sombra suave. */
+    }
+
+    /* Estilos para o título do formulário. */
+    .form-container h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    /* Estilos para parágrafos dentro do formulário. */
+    .form-container p {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+
+    /* Estilos para campos de input de e-mail e senha. */
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+    }
+
+    /* Estilos para botões gerais. */
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #171f35; /* Cor de fundo escura. */
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s; /* Transição suave no hover. */
+    }
+
+    button:hover {
+      background-color: #253563; /* Escurece no hover. */
+      border-color: #253563;
+    }
+
+    /* Estilos para checkboxes (não usados neste formulário, mas a classe existe). */
+    .checkbox {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .checkbox input {
+      margin-right: 8px;
+    }
+
+    /* Estilos para o separador de texto (ex: "ou"). */
+    .separator {
+      text-align: center;
+      margin: 20px 0;
+      color: #9ca3af;
+    }
+
+    /* Estilos para botões de login social. */
+    .social-buttons {
+      display: flex;
+      gap: 10px; /* Espaçamento entre os botões sociais. */
+    }
+
+    .social-buttons button {
+      flex: 1; /* Permite que os botões ocupem o espaço disponível igualmente. */
+      background-color: #f3f4f6;
+      color: #111827;
+    }
+
+    /* Estilos específicos para o botão de login com Google. */
+    #google-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background-color: white;
+      color: #3c4043;
+      border: 1px solid #dadce0;
+      padding: 10px 24px;
+      border-radius: 9999px; /* Borda bem arredondada para parecer um pílula. */
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      margin-top: 16px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transition: box-shadow 0.2s ease;
+    }
+
+    #google-login-btn:hover {
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Sombra mais intensa no hover. */
+    }
+
+    #google-login-btn img {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Estilos para links na parte inferior do formulário. */
+    .bottom-links {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .bottom-links a {
+      color: #2563eb; /* Cor azul para links. */
+      text-decoration: none;
+      margin-left: 4px;
+    }
+
+    /* Media Queries para Responsividade (telas menores que 900px). */
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column; /* Em telas menores, os painéis se empilham verticalmente. */
+      }
+
+      .left-panel {
+        padding: 40px 30px; /* Ajusta o padding. */
+        text-align: center; /* Centraliza o texto. */
+        align-items: center; /* Centraliza os itens Flexbox. */
+      }
+
+      .right-panel {
+        padding: 40px 20px; /* Ajusta o padding. */
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Painel Esquerdo: Informações sobre o SecureScanner -->
+  <div class="left-panel">
+    <div class="login-logo">
+        <div class="login-logo-icon">
+            <!-- Ícone SVG de cadeado/escudo. -->
+            <svg class="icon"  xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M 8 1 a 2 2 0 0 1 2 2 v 4 H 6 V 3 a 2 2 0 0 1 2 -2 Z m 3 6 V 3 a 3 3 0 0 0 -6 0 v 4 a 2 2 0 0 0 -2 2 v 5 a 2 2 0 0 0 2 2 h 6 a 2 2 0 0 0 2 -2 V 9 a 2 2 0 0 0 -2 -2 Z"/>
+            </svg>
+        </div>
+        <span>SecureScanner</span>
+    </div>
+    <h1>Análise de Vulnerabilidades Inteligente</h1>
+    <p>Identifique, analise e corrija vulnerabilidades em sua infraestrutura de TI, OT e IoT com nossa plataforma avançada de segurança.</p>
+    <ul class="features">
+        <li class="login-feature">
+            <div class="login-feature-icon">
+                <!-- Ícone SVG de 'check' para cada recurso. -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                </svg>
+            </div>
+            <span>Mapeamento automático de ativos de TI, OT e IoT</span>
+        </li>
+        <li class="login-feature">
+            <div class="login-feature-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                </svg>
+            </div>
+            <span>Detecção de portas abertas e serviços ativos em tempo real</span>
+        </li>
+        <li class="login-feature">
+            <div class="login-feature-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                </svg>
+            </div>
+            <span>Avaliações não invasivas de impacto potencial</span>
+        </li>
+        <li class="login-feature">
+            <div class="login-feature-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                </svg>
+            </div>
+            <span>Recomendações personalizadas para mitigação de riscos</span>
+        </li>
+        <li class="login-feature">
+            <div class="login-feature-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                </svg>
+            </div>
+            <span>Visualização intuitiva</span>
+        </li>
+
+    </ul>
+  </div>
+
+  <!-- Painel Direito: Formulário de Login -->
+  <div class="right-panel">
+    <form id="loginForm" class="form-container">
+      <h2>Bem-vindo ao SecureScanner</h2>
+      <p>Faça login para acessar sua conta</p>
+
+      <!-- Div para exibir mensagens de erro, inicialmente oculta. -->
+      <div id="login-error-message" class="alert alert-danger"></div>
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Senha" required />
+      
+      <button type="submit">Entrar</button>
+      
+      <div class="social-buttons">
+        <!-- Botão para login com Google. -->
+        <button id="google-login-btn">
+          <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
+          <strong>Google</strong>
+        </button>
+      </div>
+      
+      <!-- Links para recuperar senha e criar nova conta. -->
+      <div class="bottom-links">
+        <p>Esqueceu sua senha? <a href="esquecsenha.html">Recuperar senha</a></p>
+        <p>Não tem uma conta? <a href="cadastro.html">Criar conta</a></p>
+      </div>
+    </form>
+  </div>
+
+  <script type="module">
+    // Importações dos módulos do Firebase SDK necessários para autenticação.
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";
+    import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+    // Sua configuração do projeto Firebase.
+    // Estes dados são essenciais para o SDK se conectar ao seu projeto.
+    const firebaseConfig = {
+      apiKey: "AIzaSyAnA0X3VK1jW4Gv2lkJ_Cp4g7jL1hQ36u4",
+      authDomain: "scanner-c65ce.firebaseapp.com",
+      projectId: "scanner-c65ce",
+      storageBucket: "scanner-c65ce.firebasestorage.app",
+      messagingSenderId: "731199717476",
+      appId: "1:731199717476:web:7d03c2f4acf2f06d5d5f71",
+      measurementId: "G-R6QW0YRC58"
+    };
+
+    // Inicialização do aplicativo Firebase e obtenção dos serviços de Autenticação e Analytics.
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+
+    // Obtém referências aos elementos do DOM para o formulário de login e a div de erro.
+    const loginForm = document.getElementById("loginForm");
+    const errorDiv = document.getElementById("login-error-message");
+
+    // Adiciona um ouvinte de evento para o envio do formulário de login.
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault(); // Previne o comportamento padrão de recarregamento da página.
+      const email = e.target.email.value; // Obtém o valor do campo de e-mail.
+      const password = e.target.password.value; // Obtém o valor do campo de senha.
+
+      try {
+        // Tenta autenticar o usuário com e-mail e senha.
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user; // Obtém o objeto do usuário autenticado.
+
+        // Verifica se o e-mail do usuário foi verificado.
+        if (user.emailVerified) {
+          window.location.href = "scan.html"; // Redireciona para a página de scan se o e-mail for verificado.
+        } else {
+          // Se o e-mail não foi verificado, exibe uma mensagem de erro.
+          showError("Por favor, verifique seu e-mail antes de fazer login.");
+        }
+      } catch (error) {
+        // Em caso de erro na autenticação, exibe uma mensagem genérica de erro.
+        showError("Erro ao fazer login. Verifique seu e-mail e senha e tente novamente.");
+      }
+    });
+
+    // Lógica para login com Google.
+    const googleBtn = document.getElementById("google-login-btn");
+    googleBtn.addEventListener("click", async () => {
+      const provider = new GoogleAuthProvider(); // Cria uma instância do provedor de autenticação Google.
+      try {
+        // Abre um pop-up para o usuário fazer login com sua conta Google.
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user; // Obtém o objeto do usuário autenticado via Google.
+        window.location.href = "scan.html"; // Redireciona para a página de scan após o login bem-sucedido.
+      } catch (error) {
+        // Em caso de erro no login com Google, exibe uma mensagem de erro e loga o erro no console.
+        showError("Erro ao entrar com o Google.");
+        console.error(error);
+      }
+    });
+
+    // Função auxiliar para exibir mensagens de erro com um efeito de transição.
+    function showError(message) {
+      errorDiv.textContent = message; // Define o texto da mensagem de erro.
+      errorDiv.classList.add("show"); // Adiciona a classe 'show' para tornar a mensagem visível com transição.
+      setTimeout(() => {
+        errorDiv.classList.remove("show"); // Remove a classe 'show' após 5 segundos para ocultar a mensagem.
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
