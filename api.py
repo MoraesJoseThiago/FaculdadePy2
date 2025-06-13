@@ -29,6 +29,8 @@ CVE_CACHE_FILE = 'cve_cache.json'
 # É um dicionário onde a chave é o ID da CVE (ex: 'CVE-2023-1234') e o valor são seus detalhes.
 cve_details_cache = {}
 
+########################################################################################################################################
+
 # Tempo de espera inicial entre as requisições à API do NVD (em segundos).
 # Essencial para evitar exceder os limites de taxa (rate limits) da API.
 NVD_API_DELAY = 5.0 # Atraso de 5 segundos (inicial) para ser BEM MAIS conservador
@@ -63,6 +65,8 @@ def load_cve_cache():
         logging.info(f"Arquivo de cache {CVE_CACHE_FILE} não encontrado. Iniciando cache vazio.")
         cve_details_cache = {} # Inicializa o cache vazio se o arquivo não existe.
 
+########################################################################################################################################
+
 def save_cve_cache():
     """
     Salva o cache de CVEs atual (em memória) em um arquivo JSON.
@@ -95,6 +99,8 @@ def extract_cves(vulners_output):
     cve_pattern = re.compile(r'(CVE-\d{4}-\d{4,7})', re.IGNORECASE)
     # Encontra todas as ocorrências que correspondem ao padrão na string de entrada.
     return cve_pattern.findall(vulners_output)
+
+########################################################################################################################################
 
 def get_cve_severity_from_nvd(cve_id):
     """
