@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Senha - SecureScanner</title>
+    <style>
+        /* Estilos CSS Globais e de Elementos Comuns */
+        * {
+            /* Reseta margens e paddings padrão para garantir consistência entre navegadores. */
+            margin: 0;
+            padding: 0;
+            /* Inclui padding e borda na largura e altura total do elemento. */
+            box-sizing: border-box;
+            /* Define a família de fontes padrão. */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            /* Cor de fundo da página. */
+            background-color: #f5f7fa;
+            /* Garante que o corpo ocupe no mínimo 100% da altura da viewport. */
+            min-height: 100vh;
+            /* Utiliza Flexbox para layout, empilhando os itens verticalmente. */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Estilos para a Barra de Navegação */
+        .navbar {
+            /* Cor de fundo da barra de navegação. */
+            background-color: #1a2238;
+            /* Cor do texto. */
+            color: white;
+            /* Espaçamento interno. */
+            padding: 1rem 2rem;
+            /* Configura Flexbox para alinhar itens. */
+            display: flex;
+            /* Alinha os itens com espaço entre eles. */
+            justify-content: space-between;
+            /* Alinha os itens verticalmente ao centro. */
+            align-items: center;
+        }
+
+        /* Estilos para o Logo na Barra de Navegação */
+        .logo {
+            /* Configura Flexbox para alinhar o ícone e o texto do logo. */
+            display: flex;
+            /* Espaçamento entre os elementos do logo. */
+            gap: 0.5rem;
+            /* Tamanho da fonte e peso. */
+            font-size: 1.5rem;
+            font-weight: bold;
+            /* Remove sublinhado e define a cor do link. */
+            text-decoration: none;
+            color: white;
+        }
+
+        /* Estilos para o Ícone dentro do Logo */
+        .logo-icon {
+            /* Cores para o ícone. */
+            background-color: white;
+            color: blue; /* Azul para o ícone */
+            /* Dimensões e forma circular. */
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            /* Centraliza o conteúdo (SVG) dentro do círculo. */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Estilos para Links de Navegação (se houver, mas não utilizados nesta página) */
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+        }
+
+        .nav-link:hover {
+            /* Efeito de hover para links de navegação. */
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Estilos para o Container Principal do Formulário */
+        .container {
+            /* Largura máxima para centralizar o conteúdo. */
+            max-width: 450px;
+            /* Ocupa 100% da largura disponível em telas menores. */
+            width: 100%;
+            /* Margens automáticas para centralização horizontal e espaçamento vertical. */
+            margin: 5rem auto;
+            /* Espaçamento interno. */
+            padding: 2rem;
+            /* Cor de fundo e cantos arredondados. */
+            background-color: white;
+            border-radius: 8px;
+            /* Sombra para efeito visual. */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Estilos para o Cabeçalho da Seção de Recuperação de Senha */
+        .reset-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .reset-header h1 {
+            color: #1a2238;
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .reset-header p {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        /* Estilos para Grupos de Formulário (Label e Input) */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            /* Exibe o label como um bloco para ocupar sua própria linha. */
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        /* Estilos para Controles de Formulário (Inputs) */
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1rem;
+            /* Transição suave para efeitos de foco. */
+            transition: border-color 0.15s ease-in-out;
+        }
+
+        .form-control:focus {
+            /* Estilos ao focar no input. */
+            border-color: #4169e1; /* Cor da borda azul. */
+            outline: 0; /* Remove a borda de contorno padrão do navegador. */
+            box-shadow: 0 0 0 0.2rem rgba(65, 105, 225, 0.25); /* Sombra suave. */
+        }
+
+        /* Estilos para Botões Gerais */
+        .btn {
+            display: inline-block;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            user-select: none; /* Impede a seleção de texto do botão. */
+            border: 1px solid transparent;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-radius: 4px;
+            transition: all 0.15s ease-in-out; /* Transição suave para efeitos de hover. */
+            cursor: pointer; /* Muda o cursor para indicar clicável. */
+            width: 100%; /* Botões ocupam 100% da largura do pai. */
+        }
+
+        /* Estilos para o Botão Primário (Enviar Instruções) */
+        .btn-primary {
+            color: white;
+            background-color:  #171f35;
+            border-color:  #171f35;
+        }
+
+        .btn-primary:hover {
+            background-color:  #253563; /* Escurece no hover. */
+            border-color:  #253563;
+        }
+
+        /* Estilos para o Botão Secundário (Voltar) */
+        .btn-secondary {
+            color: #6c757d;
+            background-color: #f0f0f0;
+            border-color: #f0f0f0;
+            margin-top: 0.5rem; /* Espaçamento superior. */
+        }
+
+        .btn-secondary:hover {
+            background-color: #e2e2e2; /* Escurece no hover. */
+            border-color: #e2e2e2;
+        }
+
+        /* Estilos para o Link de Login (lembrou a senha) */
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .login-link a {
+            color: #4169e1;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Estilos para Mensagens de Alerta */
+        .alert {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            display: none; /* Oculto por padrão, será exibido via JavaScript. */
+        }
+
+        /* Estilos específicos para Alerta de Sucesso */
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        /* Estilos específicos para Alerta de Perigo (Erros) */
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        /* Media Query para Responsividade (Telas Pequenas) */
+        @media (max-width: 576px) {
+            .container {
+                margin: 2rem auto;
+                padding: 1.5rem; /* Ajusta o padding para telas menores. */
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="logo">
+            <div class="logo-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                </svg>
+            </div>
+            SecureScanner
+        </a>
+      
+    </nav>
+
+    <div class="container">
+        <div class="reset-header">
+            <h1>Recuperar Senha</h1>
+            <p>Informe seu e-mail para receber as instruções de recuperação</p>
+        </div>
+
+        <div class="alert alert-success" id="success-message">
+            Instruções de recuperação enviadas para seu e-mail. Verifique sua caixa de entrada.
+        </div>
+
+        <div class="alert alert-danger" id="error-message">
+            E-mail não encontrado. Verifique se o endereço está correto.
+        </div>
+
+        <form id="reset-form">
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" class="form-control" id="email" placeholder="seu@email.com" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Enviar Instruções</button>
+            <button type="button" class="btn btn-secondary" id="back-button">Voltar</button>
+        </form>
+
+        <div class="login-link">
+            Lembrou sua senha? <a href="index.html">Entrar</a>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importa as funções necessárias do Firebase SDK.
+        // O `type="module"` permite o uso de `import` e `export` no JavaScript do navegador.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";
+        import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+        
+        // Objeto de configuração do seu projeto Firebase.
+        // Esses dados são essenciais para o SDK do Firebase se conectar ao seu projeto.
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnA0X3VK1jW4Gv2lkJ_Cp4g7jL1hQ36u4",
+            authDomain: "scanner-c65ce.firebaseapp.com",
+            projectId: "scanner-c65ce",
+            storageBucket: "scanner-c65ce.firebasestorage.app",
+            messagingSenderId: "731199717476",
+            appId: "1:731199717476:web:7d03c2f4acf2f06d5d5f71",
+            measurementId: "G-R6QW0YRC58"
+        };
+        
+        // Inicializa o aplicativo Firebase com as configurações fornecidas.
+        const app = initializeApp(firebaseConfig);
+        // Obtém o serviço de Analytics do Firebase.
+        const analytics = getAnalytics(app);
+        // Obtém o serviço de Autenticação do Firebase.
+        const auth = getAuth(app);
+        
+        // Adiciona um ouvinte de evento para o envio do formulário de redefinição.
+        document.getElementById('reset-form').addEventListener('submit', function (event) {
+            event.preventDefault(); // Impede o envio padrão do formulário e o recarregamento da página.
+        
+            // Obtém a referência ao campo de e-mail e aos elementos das mensagens de alerta.
+            const emailInput = document.getElementById('email');
+            const email = emailInput.value.trim(); // Pega o valor do e-mail e remove espaços em branco.
+            const successMsg = document.getElementById('success-message');
+            const errorMsg = document.getElementById('error-message');
+        
+            // Oculta quaisquer mensagens de sucesso ou erro que possam estar visíveis.
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+        
+            // Validação simples do e-mail.
+            if (!email || !email.includes('@')) {
+                errorMsg.textContent = 'Digite um e-mail válido.';
+                errorMsg.style.display = 'block'; // Exibe a mensagem de erro.
+                return; // Interrompe a execução da função.
+            }
+        
+            // Chama a função do Firebase para enviar um e-mail de redefinição de senha.
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    // Se o e-mail foi enviado com sucesso:
+                    successMsg.style.display = 'block'; // Exibe a mensagem de sucesso.
+                    emailInput.value = ''; // Limpa o campo de e-mail.
+                })
+                .catch(error => {
+                    // Se houver um erro ao enviar o e-mail:
+                    console.error(error); // Loga o erro no console para depuração.
+                    let msg = 'Ocorreu um erro. Tente novamente.'; // Mensagem de erro padrão.
+        
+                    // Verifica o código de erro do Firebase para exibir uma mensagem mais específica.
+                    if (error.code === 'auth/user-not-found') {
+                        msg = 'E-mail não encontrado. Verifique se o endereço está correto.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        msg = 'E-mail inválido.';
+                    }
+        
+                    errorMsg.textContent = msg; // Define o texto da mensagem de erro.
+                    errorMsg.style.display = 'block'; // Exibe a mensagem de erro.
+                });
+        });
+        
+        // Adiciona um ouvinte de evento para o botão "Voltar".
+        document.getElementById('back-button').addEventListener('click', function () {
+            // Redireciona o usuário para a página principal (index.html).
+            window.location.href = 'index.html';
+        });
+    </script>
+      
+</body>
+</html>
