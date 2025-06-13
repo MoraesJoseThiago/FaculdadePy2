@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureScanner Dashboard</title>
+    <!-- Bibliotecas externas:
+         - Chart.js: Usado para criar gráficos interativos (ex: gráfico de barras de vulnerabilidades).
+         - D3.js (Data-Driven Documents): Usado para criar o mapa de ativos baseado em dados. -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script> 
+
+    <style>
+        /* Variáveis CSS para definir um esquema de cores e espaçamento consistente em toda a aplicação. */
+        :root {
+            --primary: #2563eb; /* Azul principal */
+            --primary-dark: #1d4ed8; /* Azul mais escuro para hover/active */
+            --secondary: #475569; /* Cinza secundário */
+            --info: #0ea5e9; /* Azul claro para informações */
+            --light: #f8fafc; /* Quase branco */
+            --dark: #1e293b; /* Quase preto */
+            --gray-100: #f1f5f9; /* Tons de cinza para fundos e bordas */
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+
+            /* Cores de severidade específicas para vulnerabilidades, garantindo consistência visual. */
+            --critical-color: #ef4444; /* Vermelho forte */
+            --high-color: #f97316;    /* Laranja */
+            --medium-color: #eab308;  /* Amarelo */
+            --low-color: #22c55e;     /* Verde */
+            --unknown-color: #64748b; /* Cinza para severidade desconhecida */
+        }
+
+        /* Reset básico de margens e paddings e definição da fonte padrão. */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; /* Inclui padding e borda na largura/altura total do elemento. */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Estilos do corpo da página. */
+        body {
+            background-color: var(--gray-100); /* Cor de fundo geral do dashboard. */
+            color: var(--gray-800); /* Cor de texto padrão. */
+            line-height: 1.6; /* Espaçamento entre linhas para melhor legibilidade. */
+        }
+
+        /* Estilos do cabeçalho da página (barra superior). */
+        header {
+            background-color: var(--dark); /* Fundo escuro. */
+            color: white; /* Texto branco. */
+            padding: 1rem 0; /* Espaçamento vertical. */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Sombra suave na parte inferior. */
+        }
+
+        /* Container central que limita a largura do conteúdo para melhor legibilidade. */
+        .container {
+            width: 100%;
+            max-width: 1200px; /* Largura máxima. */
+            margin: 0 auto; /* Centraliza o container horizontalmente. */
+            padding: 0 1rem; /* Padding horizontal para evitar que o conteúdo encoste nas bordas da tela. */
+        }
+
+        /* Layout do conteúdo dentro do cabeçalho (logo à esquerda, navegação à direita). */
+        .header-content {
+            display: flex; /* Usa Flexbox. */
+            justify-content: space-between; /* Distribui o espaço entre os itens. */
+            align-items: center; /* Alinha os itens verticalmente ao centro. */
+        }
+
+        /* Estilos do logo (ícone e texto). */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem; /* Espaçamento entre ícone e texto. */
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* Ícone circular do logo. */
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background-color: white; /* Fundo branco. */
+            color: blue; /* Ícone azul. */
+            border-radius: 50%; /* Torna-o circular. */
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Centraliza o SVG. */
+        }
+
+        /* Estilos da navegação principal (links e dropdown de perfil). */
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        nav ul {
+            display: flex; /* Lista de links horizontal. */
+            list-style: none; /* Remove marcadores de lista. */
+            gap: 1.5rem; /* Espaçamento entre os itens da lista. */
+            margin: 0;
+            padding: 0;
+        }
+
+        nav a {
+            color: var(--gray-300); /* Cor padrão dos links. */
+            text-decoration: none; /* Remove sublinhado. */
+            font-weight: 500;
+            transition: color 0.3s; /* Transição suave de cor no hover. */
+        }
+
+        nav a:hover {
+            color: white; /* Mudar para branco no hover. */
+        }
+
+        /* Estilo para o link ativo na navegação. */
+        nav a.active {
+            color: white;
+            position: relative;
+        }
+
+        nav a.active::after {
+            content: ''; /* Elemento pseudo para criar um sublinhado animado. */
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #253563; /* Cor do sublinhado. */
+        }
+
+        /* Estilos para o conteúdo principal da página (abaixo do cabeçalho). */
+        .main-content {
+            padding: 2rem 0; /* Espaçamento vertical. */
+        }
+
+        /* Estilos para cartões de conteúdo (blocos com sombra). */
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Sombra. */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem; /* Espaçamento entre cartões. */
+        }
+
+        .card-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: var(--gray-600);
+        }
+
+        /* Estilos para grupos de formulário (label e input). */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block; /* Ocupa sua própria linha. */
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s; /* Transições para foco. */
+        }
+
+        .form-input:focus {
+            outline: none; /* Remove o contorno padrão do navegador. */
+            border-color: var(--primary); /* Borda primária no foco. */
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* Sombra no foco. */
+        }
+
+        .form-hint {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+
+        /* Estilos para botões. */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s; /* Transições no hover e click. */
+            border: none;
+        }
+
+        .btn:active {
+            transform: translateY(1px); /* Efeito de "apertar" no click. */
+        }
+
+        .btn-primary {
+            background-color: #171f35;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #253563; /* Escurece no hover. */
+        }
+
+        /* Estilos para o dropdown de perfil. */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropbtn {
+            background-color: transparent;
+            border: none;
+            color: var(--gray-300);
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .dropbtn:hover {
+            color: white;
+        }
+
+        .dropdown-content {
+            display: none; /* Oculto por padrão. */
+            position: absolute;
+            background-color: white;
+            color: black;
+            min-width: 200px;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            top: 120%; /* Posição abaixo do botão. */
+            right: 0; /* Alinha à direita. */
+            z-index: 1000; /* Garante que fique acima de outros elementos. */
+        }
+        #dropdownContent p {
+            margin: 0.25rem 0;
+            font-size: 0.9rem;
+        }
+
+        #logoutButton {
+            margin-top: 0.5rem;
+            background-color: #e53e3e; /* Vermelho para o botão de sair. */
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            width: 100%;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #logoutButton:hover {
+            background-color: #c53030;
+        }
+
+        .btn-secondary {
+            background-color: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--gray-300);
+        }
+
+        .btn-icon {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem; /* Espaçamento entre botões de ação do formulário. */
+        }
+
+        /* Opções de scan (velocidade, portas, detecção de OS). */
+        .scan-options {
+            display: grid;
+            /* Layout responsivo de grid, com colunas que se ajustam automaticamente. */
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .scan-option {
+            border: 1px solid var(--gray-300);
+            border-radius: 4px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .scan-option:hover {
+            border-color: var(--primary); /* Borda primária no hover. */
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* Sombra no hover. */
+        }
+
+        .scan-option.selected {
+            border-color: var(--primary); /* Borda primária quando selecionado. */
+            background-color: rgba(37, 99, 235, 0.05); /* Fundo suave quando selecionado. */
+        }
+
+        .scan-option-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .scan-option-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #171f35;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.875rem;
+        }
+
+        .scan-option-title {
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .scan-option-description {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        /* Estilos para a tela de progresso (overlay). */
+        .progress-overlay {
+            position: fixed; /* Fixa na viewport. */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 41, 59, 0.9); /* Fundo escuro semi-transparente. */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000; /* Acima de outros conteúdos. */
+            display: none; /* Escondido por padrão. */
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .progress-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .progress-message {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .progress-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: var(--gray-700);
+            border-radius: 5px;
+            overflow: hidden; /* Garante que a barra interna não vaze. */
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            height: 30px;
+            width: 0%; /* Começa em 0%, animado via JS. */
+            background-color: var(--primary);
+            border-radius: 5px;
+            transition: width 0.3s ease-in-out; /* Transição suave da largura. */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* Estilos para o Modal customizado (para exibir erros ou detalhes de CVE). */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* Fundo escurecido. */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000; /* Acima da tela de progresso. */
+            display: none; /* Escondido por padrão. */
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+            position: relative; /* Para posicionar o botão de fechar. */
+            max-height: 90vh; /* Limita a altura do modal. */
+            overflow-y: auto; /* Adiciona scroll se o conteúdo for grande. */
+        }
+
+        .modal-content .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-500);
+        }
+        .modal-content .close-button:hover {
+            color: var(--gray-800);
+        }
+
+        .modal-content h3 {
+            color: var(--dark);
+            margin-bottom: 1rem;
+        }
+
+        .modal-content p {
+            color: var(--gray-700);
+            margin-bottom: 1.5rem;
+            text-align: left; /* Alinha o texto do modal à esquerda. */
+        }
+
+        .modal-content pre {
+            background-color: var(--gray-100);
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: left;
+            white-space: pre-wrap; /* Quebra linhas longas de texto. */
+            word-wrap: break-word; /* Quebra palavras longas para caber. */
+        }
+
+        #modal-ok-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        #modal-ok-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* Estilos para as abas de resultados. */
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--gray-200);
+            overflow-x: auto; /* Permite rolagem horizontal em telas pequenas. */
+            white-space: nowrap; /* Impede que os botões quebrem linha. */
+        }
+
+        .tab-button {
+            background-color: transparent;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent; /* Borda inferior para indicar ativação. */
+            flex-shrink: 0; /* Impede que os botões encolham. */
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary); /* Cor da borda inferior ativa. */
+        }
+
+        .tab-button:hover:not(.active) {
+            color: var(--gray-800);
+        }
+
+        .tab-content {
+            display: none; /* Conteúdo da aba oculto por padrão. */
+            padding: 1rem 0;
+        }
+
+        .tab-content.active {
+            display: block; /* Conteúdo da aba visível quando ativo. */
+        }
+
+        /* Resumo de Vulnerabilidades (cards com contagens). */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Grid responsivo. */
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-card {
+            background-color: var(--gray-100);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            box-shadow: inset  0 0 0 1px var(--gray-300); /* Borda sutil. */
+        }
+        .summary-card span.count {
+            display: block;
+            font-size: 2rem; /* Tamanho grande para a contagem. */
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        /* Cores das contagens de severidade. */
+        .summary-card.critical .count { color: var(--critical-color); }
+        .summary-card.high .count { color: var(--high-color); }
+        .summary-card.medium .count { color: var(--medium-color); }
+        .summary-card.low .count { color: var(--low-color); }
+        .summary-card.unknown .count { color: var(--unknown-color); }
+
+        /* Gráfico de resumo de vulnerabilidades. */
+        #vulnerabilityChart {
+            max-height: 350px; /* Altura máxima do gráfico. */
+            margin-top: 2rem;
+        }
+
+        /* Lista detalhada de vulnerabilidades, recomendações e ativos. */
+        .vulnerability-item, .recommendation-item, .asset-item { /* Estilo unificado. */
+            background-color: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Permite que os itens quebrem linha em telas menores. */
+            gap: 1rem;
+        }
+
+        .vulnerability-item-info, .recommendation-info, .asset-info {
+            flex-grow: 1; /* Ocupa o espaço disponível. */
+            text-align: left;
+        }
+
+        .vulnerability-item-info h4, .recommendation-info h4, .asset-info h4 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        .vulnerability-item-info p, .recommendation-info p, .asset-info p {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            margin-bottom: 0.25rem;
+        }
+
+        /* Badge de severidade (ex: "Crítica", "Alta"). */
+        .severity-badge {
+            display: inline-block;
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: white;
+        }
+        /* Cores para os badges de severidade. */
+        .severity-badge.critical { background-color: var(--critical-color); }
+        .severity-badge.high { background-color: var(--high-color); }
+        .severity-badge.medium { background-color: var(--medium-color); }
+        .severity-badge.low { background-color: var(--low-color); }
+        .severity-badge.unknown { background-color: var(--unknown-color); }
+
+        /* Estilos para o Mapa de Ativos (SVG gerado por D3.js). */
+        #asset-map-svg {
+            width: 100%;
+            height: 500px; /* Altura fixa para o SVG. */
+            background-color: var(--gray-50);
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            margin-top: 1rem;
+            overflow: hidden; /* Garante que o conteúdo D3 não vaze. */
+        }
+        /* Estilos para os nós (círculos) no gráfico D3.js. */
+        .node circle {
+            stroke: var(--dark);
+            stroke-width: 1.5px;
+            cursor: pointer; /* Indica que o nó é clicável. */
+        }
+        /* Estilos para o texto dos nós no gráfico D3.js. */
+        .node text {
+            font-size: 10px;
+            fill: var(--gray-900);
+            text-anchor: middle; /* Centraliza o texto. */
+            pointer-events: none; /* Permite clicar no círculo por baixo do texto. */
+            user-select: none; /* Impede a seleção de texto. */
+        }
+        /* Estilos para as linhas (links) entre os nós no gráfico D3.js. */
+        .link {
+            stroke: var(--gray-500);
+            stroke-opacity: 0.6;
+            stroke-width: 1.5px;
+        }
+        /* Estilos para o tooltip que aparece ao passar o mouse sobre os nós do mapa. */
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            padding: 8px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none; /* Não interfere com eventos de mouse nos elementos subjacentes. */
+            opacity: 0; /* Oculto por padrão. */
+            transition: opacity 0.2s; /* Transição suave para aparecer/desaparecer. */
+        }
+
+        /* Estilos para o botão "Marcar como Resolvido" nas recomendações. */
+        .recommendation-item .btn {
+            white-space: nowrap; /* Impede que o botão quebre linha. */
+        }
+
+        /* NOVO: Estilos para o Navbar de IPs (botões de filtro por IP). */
+        .ip-navbar {
+            display: flex;
+            flex-wrap: wrap; /* Permite que os botões quebrem linha se não houver espaço. */
+            gap: 0.5rem; /* Espaçamento entre os botões. */
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-300); /* Linha divisória. */
+        }
+
+        .ip-navbar .ip-button {
+            background-color: var(--gray-200);
+            color: var(--gray-700);
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .ip-navbar .ip-button:hover {
+            background-color: var(--gray-300);
+            border-color: var(--gray-400);
+        }
+
+        .ip-navbar .ip-button.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        /* Media Queries para Responsividade (ajustes para telas menores). */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column; /* Cabeçalho empilha itens verticalmente. */
+                gap: 1rem;
+            }
+
+            nav ul {
+                gap: 1rem;
+            }
+
+            .scan-options {
+                grid-template-columns: 1fr; /* Opções de scan se tornam uma única coluna. */
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr; /* Cartões de resumo se tornam uma única coluna. */
+            }
+
+            .form-actions {
+                flex-direction: column; /* Botões de ação do formulário empilham verticalmente. */
+            }
+
+            .btn {
+                width: 100%; /* Botões de ação ocupam 100% da largura. */
+            }
+
+            .vulnerability-item, .recommendation-item, .asset-item {
+                flex-direction: column; /* Itens de lista empilham verticalmente. */
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Overlay da Barra de Progresso (aparece durante o scan) -->
+    <div class="progress-overlay" id="progress-overlay">
+        <h2 class="progress-title">Análise em Andamento</h2>
+        <p class="progress-message" id="progress-message">Iniciando varredura da rede...</p>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar">0%</div>
+        </div>
+    </div>
+
+    <!-- Overlay do Modal Customizado (para alertas e detalhes) -->
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-button" id="modal-close-button">&times;</button> <!-- Botão de fechar modal. -->
+            <h3 id="modal-title"></h3> <!-- Título do modal. -->
+            <p id="modal-message"></p> <!-- Mensagem principal do modal. -->
+            <div id="modal-details-content" style="text-align: left;"></div> <!-- Conteúdo detalhado (HTML). -->
+            <button id="modal-ok-btn" class="btn btn-primary" style="display: none;">OK</button> <!-- Botão OK (opcional). -->
+        </div>
+    </div>
+
+    <!-- Cabeçalho Principal da Aplicação -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <!-- Ícone SVG de cadeado/escudo. -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                        </svg>
+                    </div>
+                    <span>SecureScanner</span>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#" class="active">Dashboard</a></li>
+                        <!-- Adicione mais links de navegação se necessário -->
+                    </ul>
+                    <div class="dropdown">
+                      <button class="dropbtn" id="userDropdown">Perfil ▾</button> <!-- Botão para abrir dropdown de perfil. -->
+                      <div class="dropdown-content" id="dropdownContent">
+                        <p id="userName">Nome de Usuário</p>
+                        <p id="userEmail">email@exemplo.com</p>
+                        <button id="logoutButton">Sair</button> <!-- Botão de logout. -->
+                      </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal da Página (Main) -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Cartão para Configuração da Análise (Formulário de Scan) -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Configurar Análise</h2>
+                    <p class="card-description">Insira os detalhes para iniciar uma nova varredura de vulnerabilidades.</p>
+                </div>
+
+                <form id="scan-form">
+                    <div class="form-group">
+                        <label for="ip-address" class="form-label">Endereço IP ou Range</label>
+                        <input type="text" id="ip-address" class="form-input" placeholder="Ex: 192.168.1.1, 192.168.1.0/24 ou 172.16.9.201-225" required>
+                        <p class="form-hint">Insira o endereço IP único, range CIDR ou com hífen</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Velocidade do Scan</label>
+                        <div class="scan-options">
+                            <!-- Opções de velocidade de scan, marcadas com `data-speed`. -->
+                            <div class="scan-option selected" data-speed="T5">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">F</div> <!-- Ícone para Fast (Rápido). -->
+                                    <div class="scan-option-title">Scan Barulhento</div>
+                                </div>
+                                <p class="scan-option-description">Scan mais rápido (-T5), mas mais detectável.</p>
+                            </div>
+
+                            <div class="scan-option" data-speed="T3">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">N</div> <!-- Ícone para Normal. -->
+                                    <div class="scan-option-title">Scan Normal</div>
+                                </div>
+                                <p class="scan-option-description">Velocidade balanceada (-T3).</p>
+                            </div>
+
+                            <div class="scan-option" data-speed="T1">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">L</div> <!-- Ícone para Lento. -->
+                                    <div class="scan-option-title">Scan Lento</div>
+                                </div>
+                                <p class="scan-option-description">Scan mais lento (-T1) e discreto.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Portas para Scan</label>
+                        <div class="scan-options">
+                            <!-- Opções de portas para scan, marcadas com `data-ports`. -->
+                            <div class="scan-option" data-ports="top_20">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">20</div>
+                                    <div class="scan-option-title">20 Portas</div>
+                                </div>
+                                <p class="scan-option-description">Scan nas 20 portas mais comuns.</p>
+                            </div>
+                            <div class="scan-option selected" data-ports="top_100">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">100</div>
+                                    <div class="scan-option-title">100 Portas</div>
+                                </div>
+                                <p class="scan-option-description">Scan nas 100 portas mais comuns.</p>
+                            </div>
+
+                            <div class="scan-option" data-ports="top_1000">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">1K</div>
+                                    <div class="scan-option-title">1000 Portas</div>
+                                </div>
+                                <p class="scan-option-description">Scan nas 1000 portas mais comuns.</p>
+                            </div>
+
+                            <div class="scan-option" data-ports="all_ports">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">A</div> <!-- Ícone para All Ports. -->
+                                    <div class="scan-option-title">Todas as Portas</div>
+                                </div>
+                                <p class="scan-option-description">Scan em todas as portas.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Opções Adicionais</label>
+                        <div class="scan-options">
+                            <!-- Opção para detecção de sistema operacional. -->
+                            <div class="scan-option" id="os-detection">
+                                <div class="scan-option-header">
+                                    <div class="scan-option-icon">OS</div>
+                                    <div class="scan-option-title">Detecção de OS</div>
+                                </div>
+                                <p class="scan-option-description">Tentar detectar sistema operacional.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-icon">
+                            <!-- Ícone de informação para o botão "Iniciar Análise". -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                            </svg>
+                            Iniciar Análise
+                        </button>
+                        <button type="reset" class="btn btn-secondary">Limpar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Cartão para Exibição dos Resultados da Análise (inicialmente oculto) -->
+            <div class="card" id="results-card" style="display:none;">
+                <div class="card-header">
+                    <h2 class="card-title">Resultados da Análise</h2>
+                    <p class="card-description">Visão geral e detalhes das vulnerabilidades e ativos.</p>
+                </div>
+
+                <!-- Abas de navegação para os resultados. -->
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="summary-tab">Resumo</button>
+                    <button class="tab-button" data-tab="vulnerabilities-tab">Vulnerabilidades</button>
+                    <button class="tab-button" data-tab="asset-map-tab">Mapa de Ativos</button>
+                    <button class="tab-button" data-tab="recommendations-tab">Recomendações</button>
+                </div>
+
+                <!-- Conteúdo da Aba de Resumo -->
+                <div id="summary-tab" class="tab-content active">
+                    <h3>Visão Geral das Vulnerabilidades</h3>
+                    <!-- Navbar de IPs para filtrar o resumo por IP. -->
+                    <div class="ip-navbar" id="summary-ip-navbar">
+                    </div>
+                    <div class="summary-grid">
+                        <div class="summary-card critical"><span id="count-critical" class="count">0</span>Vulnerabilidades Críticas</div>
+                        <div class="summary-card high"><span id="count-high" class="count">0</span>Vulnerabilidades Altas</div>
+                        <div class="summary-card medium"><span id="count-medium" class="count">0</span>Vulnerabilidades Médias</div>
+                        <div class="summary-card low"><span id="count-low" class="count">0</span>Vulnerabilidades Baixas</div>
+                        <div class="summary-card unknown"><span id="count-unknown" class="count">0</span>Severidade Desconhecida</div>
+                    </div>
+                    <canvas id="vulnerabilityChart"></canvas> <!-- Elemento para o gráfico de vulnerabilidades. -->
+                    <div id="detected-devices-summary" style="margin-top: 2rem;">
+                        <h3>Dispositivos Detectados</h3>
+                        <div class="summary-grid">
+                            <div class="summary-card"><span id="count-total-devices" class="count">0</span>Total de Dispositivos</div>
+                            <div class="summary-card"><span id="count-servers" class="count">0</span>Servidores</div>
+                            <div class="summary-card"><span id="count-workstations" class="count">0</span>Estações de Trabalho</div>
+                            <div class="summary-card"><span id="count-iot" class="count">0</span>Dispositivos IoT</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conteúdo da Aba de Vulnerabilidades Detalhadas -->
+                <div id="vulnerabilities-tab" class="tab-content">
+                    <h3>Detalhes das Vulnerabilidades</h3>
+                    <!-- Navbar de IPs para filtrar vulnerabilidades por IP. -->
+                    <div class="ip-navbar" id="vulnerabilities-ip-navbar">
+                    </div>
+                    <div id="vulnerabilities-list">
+                    </div>
+                </div>
+
+                <!-- Conteúdo da Aba de Mapa de Ativos -->
+                <div id="asset-map-tab" class="tab-content">
+                    <h3>Mapa de Ativos</h3>
+                    <p>Uma representação visual dos dispositivos detectados na rede. Passe o mouse sobre um círculo para ver detalhes.</p>
+                    <svg id="asset-map-svg"></svg> <!-- Elemento SVG para o mapa gerado por D3.js. -->
+                </div>
+
+                <!-- Conteúdo da Aba de Recomendações -->
+                <div id="recommendations-tab" class="tab-content">
+                    <h3>Recomendações de Mitigação</h3>
+                    <!-- Navbar de IPs para filtrar recomendações por IP. -->
+                    <div class="ip-navbar" id="recommendations-ip-navbar">
+                    </div>
+                    <div id="recommendations-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    // Variáveis globais para controlar a animação da barra de progresso.
+    let progressInterval;
+    let currentProgress = 0;
+    // Mensagens de progresso que mudam ao longo do tempo.
+    const progressMessages = [
+        "Iniciando varredura da rede...",
+        "Realizando descoberta de hosts ativos...",
+        "Analisando portas e serviços...",
+        "Identificando sistemas operacionais...",
+        "Coletando informações de vulnerabilidades (CVEs) do NVD...",
+        "Processando resultados e gerando relatórios...",
+        "Análise concluída. Preparando o dashboard!"
+    ];
+    let messageIndex = 0; // Índice da mensagem atual na barra de progresso.
+    let vulnerabilityChartInstance = null; // Instância do gráfico de vulnerabilidades para poder destruí-lo e recriá-lo.
+
+    // Variáveis para armazenar os resultados do scan globalmente.
+    let globalScanResults = []; // Contém os resultados completos do Nmap.
+    let globalUniqueVulnerabilities = []; // Contém as CVEs únicas extraídas dos resultados.
+    
+    // Variáveis para controlar o filtro de IP ativo em cada aba.
+    let currentVulnerabilityFilterIp = 'all';
+    let currentSummaryFilterIp = 'all';
+    let currentRecommendationsFilterIp = 'all'; // NOVO: Estado para o filtro de IP na aba de recomendações.
+
+    // --- Funções do Modal (para exibir alertas e detalhes de CVE) ---
+    /**
+     * Exibe um modal customizado com título, mensagem e conteúdo HTML detalhado opcional.
+     * @param {string} title - Título do modal.
+     * @param {string} message - Mensagem principal do modal.
+     * @param {string} [detailsHtml=''] - Conteúdo HTML adicional para detalhes.
+     * @param {boolean} [showOkBtn=false] - Se deve exibir um botão "OK" no modal.
+     */
+    function showModal(title, message, detailsHtml = '', showOkBtn = false) {
+        const modal = document.getElementById('custom-modal');
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-message').textContent = message;
+        document.getElementById('modal-details-content').innerHTML = detailsHtml; // Define o HTML detalhado.
+        document.getElementById('modal-ok-btn').style.display = showOkBtn ? 'inline-block' : 'none';
+        modal.style.display = 'flex'; // Torna o modal visível.
+    }
+
+    /**
+     * Oculta o modal customizado e limpa seu conteúdo detalhado.
+     */
+    function closeModal() {
+        document.getElementById('custom-modal').style.display = 'none';
+        document.getElementById('modal-details-content').innerHTML = ''; // Limpa o conteúdo detalhado.
+    }
+
+    // Adiciona event listeners para fechar o modal.
+    document.getElementById('modal-close-button').addEventListener('click', closeModal);
+    document.getElementById('modal-ok-btn').addEventListener('click', closeModal);
+
+
+    // --- Funções da Barra de Progresso e Overlay de Carregamento ---
+    /**
+     * Inicia a animação da barra de progresso e exibe o overlay de carregamento.
+     * As mensagens de progresso mudam ao longo do tempo.
+     */
+    function startProgressBarAnimation() {
+        const progressBar = document.getElementById('progress-bar');
+        const progressMessage = document.getElementById('progress-message');
+        const progressOverlay = document.getElementById('progress-overlay');
+
+        progressOverlay.style.display = 'flex'; // Exibe o overlay.
+        currentProgress = 0; // Reseta o progresso.
+        messageIndex = 0; // Reseta o índice da mensagem.
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+        progressMessage.textContent = progressMessages[messageIndex]; // Define a mensagem inicial.
+
+        const totalDuration = 1500000; // 25 minutos (em milissegundos) para scans mais longos, simulando um tempo maior.
+        const updateInterval = 1000; // Atualiza a cada 1 segundo.
+
+        progressInterval = setInterval(() => {
+            // Calcula o progresso incremental.
+            currentProgress += (updateInterval / totalDuration) * 100;
+            if (currentProgress >= 99) { 
+                currentProgress = 99; // Limita a 99% para mostrar 100% apenas ao finalizar.
+                progressBar.textContent = `99%`;
+            } else {
+                progressBar.textContent = `${Math.floor(currentProgress)}%`;
+            }
+            progressBar.style.width = `${currentProgress}%`; // Atualiza a largura da barra.
+
+            // Atualiza a mensagem de progresso com base no progresso atual.
+            const newIndex = Math.floor((currentProgress / 100) * progressMessages.length);
+            if (newIndex < progressMessages.length && newIndex > messageIndex) {
+                messageIndex = newIndex;
+                progressMessage.textContent = progressMessages[newIndex];
+            }
+
+        }, updateInterval);
+    }
+
+    /**
+     * Para a animação da barra de progresso e oculta o overlay de carregamento.
+     */
+    function stopProgressBarAnimation() {
+        clearInterval(progressInterval); // Limpa o intervalo da animação.
+        const progressBar = document.getElementById('progress-bar');
+        progressBar.style.width = '100%'; // Define a barra para 100%.
+        progressBar.textContent = '100%';
+        document.getElementById('progress-message').textContent = 'Análise Concluída. Preparando o dashboard!';
+        
+        // Pequeno atraso antes de ocultar o overlay para o usuário ver "100%".
+        setTimeout(() => {
+            document.getElementById('progress-overlay').style.display = 'none';
+        }, 800); 
+    }
+
+    // --- Lógica Principal do Scan (integração com o backend Flask) ---
+    document.getElementById('scan-form').addEventListener('submit', async function(e) {
+        e.preventDefault(); // Impede o envio padrão do formulário.
+
+        // Coleta os valores selecionados do formulário.
+        const ip = document.getElementById('ip-address').value;
+        // Pega o 'data-speed' do elemento de opção de velocidade selecionado.
+        const speed = document.querySelector('.scan-option.selected[data-speed]').dataset.speed;
+        // Pega o 'data-ports' do elemento de opção de portas selecionado.
+        const portOption = document.querySelector('.scan-option.selected[data-ports]').dataset.ports;
+        // Verifica se a opção de detecção de OS está selecionada.
+        const osDetection = document.getElementById('os-detection').classList.contains('selected');
+
+        startProgressBarAnimation(); // Inicia a animação da barra de progresso.
+
+        try {
+            // Faz uma requisição POST para o endpoint '/scan' da API Flask.
+            const res = await fetch('http://localhost:5000/scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}, // Indica que o corpo da requisição é JSON.
+                body: JSON.stringify({ // Converte os dados do formulário para uma string JSON.
+                    target: ip,
+                    speed: speed,
+                    port_option: portOption,
+                    os_detection: osDetection
+                })
+            });
+
+            const data = await res.json(); // Analisa a resposta JSON da API.
+            stopProgressBarAnimation(); // Para a animação da barra de progresso.
+
+            if (data.results) {
+                globalScanResults = data.results; // Armazena os resultados completos globalmente.
+                processAndDisplayResults(data.results); // Processa e exibe os resultados.
+            } else if (data.error) {
+                showModal('Erro na Análise', 'Erro: ' + data.error, '', true); // Exibe erro retornado pela API.
+            } else if (data.message) {
+                showModal('Análise Concluída', data.message, '', true); // Exibe mensagem de conclusão (ex: nenhum host encontrado).
+            } else {
+                showModal('Erro Desconhecido', 'Nenhum resultado ou erro válido recebido da API.', '', true);
+            }
+
+        } catch (error) {
+            stopProgressBarAnimation(); // Em caso de erro de rede, para a animação.
+            showModal('Erro de Conexão', 'Erro ao realizar a análise. Verifique se o servidor está ativo e sua conexão. Detalhes: ' + error.message, '', true);
+            console.error(error); // Loga o erro no console para depuração.
+        }
+    });
+
+    // --- Funções de Processamento e Exibição de Resultados nas Abas ---
+
+    /**
+     * Processa os resultados brutos do scan Nmap, extraindo vulnerabilidades e contagens de dispositivos,
+     * e então chama as funções para exibir os dados nas diferentes abas.
+     * @param {Array<Object>} results - Resultados brutos do scan Nmap.
+     */
+    function processAndDisplayResults(results) {
+        let allVulnerabilities = []; // Lista para coletar todas as vulnerabilidades encontradas.
+        let deviceCounts = { // Objeto para contar tipos de dispositivos.
+            total: results.length,
+            servers: 0,
+            workstations: 0,
+            iot: 0,
+            unknown: 0
+        };
+
+        results.forEach(hostResult => { // Itera sobre cada host nos resultados do scan.
+            const osName = hostResult.os_details.name.toLowerCase();
+            const osFamily = hostResult.os_details.family.toLowerCase();
+            // Heurística simples para detectar se é um servidor (baseado em serviços comuns de servidor).
+            const isServer = hostResult.services.some(s => ['ssh', 'http', 'https', 'ftp', 'smtp', 'mysql', 'mssql', 'rdp'].includes(s.name));
+
+            // Classifica o dispositivo em categorias.
+            if (isServer || osName.includes('server') || osFamily.includes('linux')) {
+                deviceCounts.servers++;
+            } else if (osName.includes('windows') || osName.includes('macos') || osName.includes('ubuntu') || osName.includes('debian')) {
+                 deviceCounts.workstations++;
+            } else if (osName.includes('embedded') || osName.includes('router') || osName.includes('wap') || osName.includes('camera') || osName.includes('printer')) {
+                deviceCounts.iot++;
+            } else {
+                deviceCounts.unknown++;
+            }
+            
+            // Coleta todas as CVEs de cada serviço de cada host.
+            hostResult.services.forEach(service => {
+                service.cves.forEach(cve => {
+                    allVulnerabilities.push({
+                        cve_id: cve.id,
+                        description: cve.summary,
+                        severity: cve.severity,
+                        cvss_score: cve.cvss_score,
+                        references: cve.references,
+                        affected_ips: [hostResult.ip], // Associa a CVE ao IP do host.
+                        affected_service: `${service.name} (${service.product || ''} ${service.version || ''})`,
+                        port: service.port,
+                        protocol: service.protocol,
+                        host_details: hostResult // Inclui detalhes completos do host.
+                    });
+                });
+            });
+        });
+
+        // Desduplica as vulnerabilidades: Garante que cada CVE-ID em um IP específico seja contada apenas uma vez.
+        const uniqueVulnerabilitiesByIdAndIP = {};
+        allVulnerabilities.forEach(vuln => {
+            const key = `${vuln.cve_id}-${vuln.affected_ips.join(',')}`;
+            if (!uniqueVulnerabilitiesByIdAndIP[key]) {
+                uniqueVulnerabilitiesByIdAndIP[key] = vuln;
+            } else {
+                // Se a CVE já existe para este IP, apenas adiciona IPs afetados se forem diferentes.
+                uniqueVulnerabilitiesByIdAndIP[key].affected_ips = 
+                    [...new Set([...uniqueVulnerabilitiesByIdAndIP[key].affected_ips, ...vuln.affected_ips])];
+            }
+        });
+        globalUniqueVulnerabilities = Object.values(uniqueVulnerabilitiesByIdAndIP); // Armazena as vulnerabilidades únicas globalmente.
+
+        // Contagem de severidade para o resumo inicial (antes de qualquer filtro de IP).
+        let severityCounts = { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 };
+        globalUniqueVulnerabilities.forEach(vuln => severityCounts[vuln.severity]++);
+
+        // Atualiza e exibe os dados nas respectivas abas.
+        updateSummaryTab(globalUniqueVulnerabilities, deviceCounts, 'all'); // Passa 'all' para mostrar o resumo geral.
+        displayVulnerabilities(globalUniqueVulnerabilities, 'all'); // Exibe todas as vulnerabilidades inicialmente.
+        displayAssetMap(results); // Exibe o mapa de ativos.
+        displayRecommendations(globalUniqueVulnerabilities); // Chama com todas as vulnerabilidades inicialmente para gerar recomendações.
+
+        document.getElementById('results-card').style.display = 'block'; // Exibe o cartão de resultados.
+        activateTab('summary-tab'); // Ativa a aba de resumo por padrão.
+    }
+
+    // --- Summary Tab (Aba 1) ---
+    /**
+     * Atualiza a aba de resumo com contagens de vulnerabilidades e dispositivos,
+     * e desenha/atualiza o gráfico de barras.
+     * Inclui um navbar de IPs para filtrar o resumo.
+     * @param {Array<Object>} allVulnerabilities - Lista de todas as vulnerabilidades únicas.
+     * @param {Object} deviceCounts - Objeto com contagens de tipos de dispositivos.
+     * @param {string} filterIp - O IP selecionado para filtrar (ou 'all').
+     */
+    function updateSummaryTab(allVulnerabilities, deviceCounts, filterIp = 'all') {
+        const summaryIpNavbar = document.getElementById('summary-ip-navbar');
+        summaryIpNavbar.innerHTML = ''; // Limpa o navbar existente.
+
+        // Extrai IPs únicos de todas as vulnerabilidades para criar os botões do navbar.
+        const uniqueIps = new Set();
+        allVulnerabilities.forEach(vuln => {
+            vuln.affected_ips.forEach(ip => uniqueIps.add(ip));
+        });
+        // Ordena os IPs numericamente para exibição.
+        const sortedIps = Array.from(uniqueIps).sort((a, b) => {
+            const ipToNum = ip => ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0);
+            return ipToNum(a) - ipToNum(b);
+        });
+
+        // Cria o botão "Todos os IPs".
+        const allIpButton = document.createElement('button');
+        allIpButton.textContent = 'Todos os IPs';
+        allIpButton.className = `ip-button ${filterIp === 'all' ? 'active' : ''}`; // Ativa se 'all' for o filtro.
+        allIpButton.addEventListener('click', () => {
+            currentSummaryFilterIp = 'all'; // Atualiza o estado global do filtro.
+            updateSummaryTab(globalUniqueVulnerabilities, deviceCounts, 'all'); // Re-renderiza com filtro 'all'.
+        });
+        summaryIpNavbar.appendChild(allIpButton);
+
+        // Cria botões para cada IP único.
+        sortedIps.forEach(ip => {
+            const button = document.createElement('button');
+            button.textContent = ip;
+            button.className = `ip-button ${filterIp === ip ? 'active' : ''}`; // Ativa se este IP for o filtro.
+            button.addEventListener('click', () => {
+                currentSummaryFilterIp = ip; // Atualiza o estado global do filtro.
+                updateSummaryTab(globalUniqueVulnerabilities, deviceCounts, ip); // Re-renderiza com o IP selecionado.
+            });
+            summaryIpNavbar.appendChild(button);
+        });
+
+        // Filtra as vulnerabilidades com base no IP selecionado.
+        const filteredVulnerabilities = allVulnerabilities.filter(vuln => {
+            return filterIp === 'all' || vuln.affected_ips.includes(filterIp);
+        });
+
+        // Recalcula as contagens de severidade para as vulnerabilidades filtradas.
+        let severityCounts = { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 };
+        filteredVulnerabilities.forEach(vuln => severityCounts[vuln.severity]++);
+
+        // Atualiza os elementos HTML com as novas contagens.
+        document.getElementById('count-critical').textContent = severityCounts.critical;
+        document.getElementById('count-high').textContent = severityCounts.high;
+        document.getElementById('count-medium').textContent = severityCounts.medium;
+        document.getElementById('count-low').textContent = severityCounts.low;
+        document.getElementById('count-unknown').textContent = 0; // O 'unknown' já é tratado na API como 'medium' se não houver CVSS.
+
+        // Atualiza as contagens de dispositivos.
+        document.getElementById('count-total-devices').textContent = deviceCounts.total;
+        document.getElementById('count-servers').textContent = deviceCounts.servers;
+        document.getElementById('count-workstations').textContent = deviceCounts.workstations;
+        document.getElementById('count-iot').textContent = deviceCounts.iot;
+
+        // Atualiza/Cria o gráfico de barras de vulnerabilidades.
+        const ctx = document.getElementById('vulnerabilityChart').getContext('2d');
+        if (vulnerabilityChartInstance) {
+            vulnerabilityChartInstance.destroy(); // Destrói a instância anterior do gráfico se existir.
+        }
+
+        vulnerabilityChartInstance = new Chart(ctx, {
+            type: 'bar', // Tipo de gráfico: barras.
+            data: {
+                labels: ['Crítica', 'Alta', 'Média', 'Baixa'], // Rótulos para as barras.
+                datasets: [{
+                    label: 'Número de Vulnerabilidades',
+                    data: [ // Dados para cada barra.
+                        severityCounts.critical,
+                        severityCounts.high,
+                        severityCounts.medium,
+                        severityCounts.low
+                    ],
+                    // Cores de fundo das barras, usando a função `varToRgb` para cores CSS.
+                    backgroundColor: [
+                        varToRgb('--critical-color', 0.8),
+                        varToRgb('--high-color', 0.8),
+                        varToRgb('--medium-color', 0.8),
+                        varToRgb('--low-color', 0.8)
+                    ],
+                    // Cores das bordas das barras.
+                    borderColor: [
+                        varToRgb('--critical-color', 1),
+                        varToRgb('--high-color', 1),
+                        varToRgb('--medium-color', 1),
+                        varToRgb('--low-color', 1)
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true, // Torna o gráfico responsivo ao redimensionamento.
+                maintainAspectRatio: false, // Não mantém a proporção do canvas.
+                scales: {
+                    y: {
+                        beginAtZero: true, // Eixo Y começa em zero.
+                        ticks: {
+                            callback: function(value) { if (value % 1 === 0) return value; } // Exibe apenas números inteiros no eixo Y.
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // Não exibe a legenda (os rótulos já são claros).
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Converte uma variável CSS (ex: '--primary-color') para um formato RGBA.
+     * @param {string} varName - Nome da variável CSS (ex: '--primary-color').
+     * @param {number} [alpha=1] - Valor de transparência (0 a 1).
+     * @returns {string} Cor em formato RGBA.
+     */
+    function varToRgb(varName, alpha = 1) {
+        const style = getComputedStyle(document.documentElement);
+        const color = style.getPropertyValue(varName).trim();
+        // Se a cor for um hexadecimal, converte para RGB.
+        if (color.startsWith('#') && color.length === 7) {
+            const r = parseInt(color.substring(1, 3), 16);
+            const g = parseInt(color.substring(3, 5), 16);
+            const b = parseInt(color.substring(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        return color; // Retorna a cor original se não for hexadecimal.
+    }
+
+    // --- Detailed Vulnerabilities Tab (Aba 2) ---
+    /**
+     * Exibe uma lista detalhada de vulnerabilidades, com opção de filtro por IP.
+     * @param {Array<Object>} vulnerabilities - Lista de vulnerabilidades a serem exibidas.
+     * @param {string} currentFilterIp - O IP selecionado para filtrar (ou 'all').
+     */
+    function displayVulnerabilities(vulnerabilities, currentFilterIp = 'all') {
+        const listDiv = document.getElementById('vulnerabilities-list');
+        listDiv.innerHTML = ''; // Limpa a lista existente.
+
+        const ipNavbar = document.getElementById('vulnerabilities-ip-navbar');
+        ipNavbar.innerHTML = ''; // Limpa o navbar existente.
+
+        if (vulnerabilities.length === 0) {
+            listDiv.innerHTML = '<p style="text-align: center; color: var(--gray-600);">Nenhuma vulnerabilidade detalhada detectada.</p>';
+            return;
+        }
+
+        // 1. Criar o Navbar de IPs para a aba de Vulnerabilidades.
+        const uniqueIps = new Set();
+        vulnerabilities.forEach(vuln => {
+            vuln.affected_ips.forEach(ip => uniqueIps.add(ip));
+        });
+        const sortedIps = Array.from(uniqueIps).sort((a, b) => {
+            const ipToNum = ip => ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0);
+            return ipToNum(a) - ipToNum(b);
+        });
+
+        // Botão "Todos os IPs".
+        const allIpButton = document.createElement('button');
+        allIpButton.textContent = 'Todos os IPs';
+        allIpButton.className = `ip-button ${currentFilterIp === 'all' ? 'active' : ''}`;
+        allIpButton.addEventListener('click', () => {
+            currentVulnerabilityFilterIp = 'all';
+            displayVulnerabilities(globalUniqueVulnerabilities, 'all');
+        });
+        ipNavbar.appendChild(allIpButton);
+
+        // Botões para cada IP único.
+        sortedIps.forEach(ip => {
+            const button = document.createElement('button');
+            button.textContent = ip;
+            button.className = `ip-button ${currentFilterIp === ip ? 'active' : ''}`;
+            button.addEventListener('click', () => {
+                currentVulnerabilityFilterIp = ip;
+                displayVulnerabilities(globalUniqueVulnerabilities, ip);
+            });
+            ipNavbar.appendChild(button);
+        });
+
+        // 2. Filtrar e exibir as vulnerabilidades.
+        const filteredVulnerabilities = vulnerabilities.filter(vuln => {
+            return currentFilterIp === 'all' || vuln.affected_ips.includes(currentFilterIp);
+        });
+
+        // Define a ordem de severidade para classificação (crítica > alta > média > baixa > desconhecida).
+        const severityOrder = { 'critical': 5, 'high': 4, 'medium': 3, 'low': 2, 'unknown': 1 };
+        // Classifica as vulnerabilidades filtradas por severidade (do mais crítico para o menos).
+        const sortedVulnerabilities = [...filteredVulnerabilities].sort((a, b) => severityOrder[b.severity] - severityOrder[a.severity]);
+
+        if (sortedVulnerabilities.length === 0) {
+            listDiv.innerHTML = '<p style="text-align: center; color: var(--gray-600);">Nenhuma vulnerabilidade encontrada para o IP selecionado.</p>';
+            return;
+        }
+
+        // Renderiza cada vulnerabilidade na lista.
+        sortedVulnerabilities.forEach(vuln => {
+            const item = document.createElement('div');
+            item.className = 'vulnerability-item';
+            // Formata a primeira letra da severidade para maiúscula.
+            const displaySeverity = vuln.severity.charAt(0).toUpperCase() + vuln.severity.slice(1);
+            
+            item.innerHTML = `
+                <div class="vulnerability-item-info">
+                    <h4>${vuln.cve_id}</h4>
+                    <p>${vuln.description}</p>
+                    <p>Afetados: <strong>${Array.from(vuln.affected_ips).join(', ')}</strong> | Serviço: ${vuln.affected_service} (Porta: ${vuln.port}/${vuln.protocol})</p>
+                </div>
+                <span class="severity-badge ${vuln.severity}">${displaySeverity}</span>
+                <button class="btn btn-primary btn-sm view-details-btn" 
+                        data-cve-id="${vuln.cve_id}"
+                        data-summary="${vuln.description}"
+                        data-cvss="${vuln.cvss_score || 'N/A'}"
+                        data-references='${JSON.stringify(vuln.references)}'>
+                    Ver Detalhes
+                </button>
+            `;
+            listDiv.appendChild(item);
+        });
+
+        // Adiciona event listeners para os botões "Ver Detalhes".
+        document.querySelectorAll('.view-details-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Obtém os dados do dataset do botão.
+                const cveId = this.dataset.cveId;
+                const summary = this.dataset.summary;
+                const cvss = this.dataset.cvss;
+                const references = JSON.parse(this.dataset.references); // Deserializa as referências JSON.
+
+                // Constrói o HTML para os detalhes da CVE no modal.
+                let detailsHtml = `
+                    <p><strong>ID da CVE:</strong> ${cveId}</p>
+                    <p><strong>Resumo:</strong> ${summary}</p>
+                    <p><strong>Pontuação CVSS:</strong> ${cvss}</p>
+                    ${references.length > 0 ? 
+                        `<p><strong>Referências:</strong></p><ul>${references.map(ref => `<li><a href="${ref}" target="_blank">${ref}</a></li>`).join('')}</ul>` 
+                        : '<p>Nenhuma referência disponível.</p>'
+                    }
+                `;
+                // Exibe o modal com os detalhes da CVE.
+                showModal('Detalhes da Vulnerabilidade', '', detailsHtml, false);
+            });
+        });
+    }
+
+    // --- Mapa de Ativos (Aba 3) com D3.js ---
+    /**
+     * Desenha um mapa de ativos usando D3.js, representando hosts como nós e suas conexões.
+     * Os nós são coloridos e dimensionados com base no status e número de vulnerabilidades.
+     * @param {Array<Object>} hostResults - Resultados do scan Nmap (lista de hosts).
+     */
+    function displayAssetMap(hostResults) {
+        const svg = d3.select("#asset-map-svg"); // Seleciona o elemento SVG.
+        svg.html(''); // Limpa o SVG existente para redesenhar.
+        const width = svg.node().clientWidth; // Obtém a largura do SVG.
+        const height = svg.node().clientHeight; // Obtém a altura do SVG.
+
+        // Configura a simulação de força do D3.js.
+        const simulation = d3.forceSimulation()
+            // Força de ligação (links): define a distância e força entre nós conectados.
+            .force("link", d3.forceLink().id(d => d.id).distance(150).strength(0.5))
+            // Força de carga (charge): nós se repelem ou se atraem. Negativo para repulsão.
+            .force("charge", d3.forceManyBody().strength(-400))
+            // Força de centro: puxa todos os nós para o centro do SVG.
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        // Mapeia os resultados dos hosts em objetos de nó para o D3.js.
+        const nodes = hostResults.map((h, i) => {
+            let type = 'unknown';
+            const osName = h.os_details.name.toLowerCase();
+            const isServer = h.services.some(s => ['ssh', 'http', 'https', 'ftp', 'smtp', 'mysql', 'mssql', 'rdp'].includes(s.name));
+
+            // Classifica o tipo de ativo para o mapa.
+            if (isServer) { type = 'server'; }
+            else if (osName.includes('windows') || osName.includes('macos') || osName.includes('ubuntu') || osName.includes('debian')) { type = 'workstation'; }
+            else if (osName.includes('embedded') || osName.includes('router') || osName.includes('wap') || osName.includes('camera') || osName.includes('printer')) { type = 'iot'; }
+
+            // Conta as vulnerabilidades únicas para este host.
+            const uniqueCvesForHost = new Set();
+            h.services.forEach(svc => {
+                svc.cves.forEach(cve => {
+                    uniqueCvesForHost.add(cve.id);
+                });
+            });
+
+            return {
+                id: h.ip, // ID único para o nó (o IP).
+                name: h.ip,
+                hostname: h.hostname || 'N/A',
+                status: h.status,
+                os: h.os_details.name,
+                os_details: h.os_details, // Adiciona os detalhes do SO aqui para uso no modal
+                type: type,
+                services: h.services,
+                total_cves: uniqueCvesForHost.size // Número total de CVEs únicas para este host.
+            };
+        });
+
+        // Cria links entre os nós. Se houver mais de um nó, o nó com mais CVEs (ou o primeiro)
+        // se torna um "nó central" e os outros se conectam a ele.
+        const links = [];
+        if (nodes.length > 0) {
+            if (nodes.length > 1) {
+                let centralNode = nodes[0]; // Começa com o primeiro nó como central.
+                if (nodes.some(n => n.total_cves > 0)) { // Se houver nós com CVEs, encontre o com mais.
+                    centralNode = nodes.reduce((maxNode, currentNode) => {
+                        return (currentNode.total_cves > maxNode.total_cves) ? currentNode : maxNode;
+                    }, nodes[0]);
+                }
+                
+                nodes.forEach(n => {
+                    if (n.id !== centralNode.id) {
+                        links.push({ source: centralNode.id, target: n.id }); // Conecta outros nós ao nó central.
+                    }
+                });
+            }
+        }
+        
+        // Desenha as linhas de ligação no SVG.
+        const link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(links)
+            .enter().append("line")
+            .attr("stroke", varToRgb('--gray-500', 0.6))
+            .attr("stroke-width", 1.5);
+
+        // Desenha os nós (círculos e texto) no SVG.
+        const node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("g")
+            .data(nodes)
+            .enter().append("g")
+            .attr("class", "node")
+            .call(d3.drag() // Habilita o arrasto dos nós.
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append("circle")
+            .attr("r", d => Math.min(30, 10 + d.total_cves * 0.5)) // Raio do círculo: aumenta com o número de CVEs.
+            .attr("fill", d => { // Cor do círculo baseada na severidade mais alta ou status 'down'.
+                let highestSeverity = 'low';
+                const severityOrder = { 'critical': 5, 'high': 4, 'medium': 3, 'low': 2, 'unknown': 1 };
+                d.services.forEach(svc => {
+                    svc.cves.forEach(cve => {
+                        if (severityOrder[cve.severity] > severityOrder[highestSeverity]) {
+                            highestSeverity = cve.severity;
+                        }
+                    });
+                });
+
+                if (d.status === 'down') return '#ef4444'; // Vermelho se o host estiver 'down'.
+                
+                // Retorna a cor da severidade mais alta usando `varToRgb`.
+                switch(highestSeverity) {
+                    case 'critical': return varToRgb('--critical-color');
+                    case 'high': return varToRgb('--high-color');
+                    case 'medium': return varToRgb('--medium-color');
+                    case 'low': return varToRgb('--low-color');
+                    default: return varToRgb('--unknown-color');
+                }
+            })
+            .on("mouseover", function(event, d) { // Evento de mouseover para exibir tooltip.
+                const tooltip = d3.select("body").append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0); // Começa invisível.
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", .9); // Fade in do tooltip.
+                const displayHostname = d.hostname && d.hostname !== 'N/A' ? d.hostname : 'Hostname não detectado';
+                tooltip.html(`<strong>IP:</strong> ${d.id}<br/>
+                                  <strong>Hostname:</strong> ${displayHostname}<br/>
+                                  <strong>OS:</strong> ${d.os}<br/>
+                                  <strong>Vulnerabilidades:</strong> ${d.total_cves}<br/>
+                                  <strong>Status:</strong> ${d.status}`)
+                    .style("left", (event.pageX + 10) + "px") // Posiciona o tooltip ao lado do cursor.
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(d) { // Evento de mouseout para remover tooltip.
+                d3.selectAll(".tooltip").remove(); // Remove o tooltip.
+            })
+            .on("click", function(event, d) { // Evento de click para exibir detalhes do ativo no modal.
+                let servicesHtml = '<h4>Serviços:</h4><table class="results-table"><thead><tr><th>Porta</th><th>Serviço</th><th>Produto</th><th>Versão</th><th>CVEs</th></tr></thead><tbody>';
+                d.services.forEach(svc => {
+                    // Cria badges para as CVEs de cada serviço.
+                    let cvesBadges = svc.cves.map(c => `<span class="cve-badge ${c.severity}">${c.id}</span>`).join(' ');
+                    servicesHtml += `<tr><td>${svc.port}</td><td>${svc.name}</td><td>${svc.product || '-'}</td><td>${svc.version || '-'}</td><td>${cvesBadges || 'Nenhuma'}</td></tr>`;
+                });
+                servicesHtml += '</tbody></table>';
+
+                const details = `
+                    <p><strong>IP:</strong> ${d.id}</p>
+                    <p><strong>Hostname:</strong> ${d.hostname && d.hostname !== 'N/A' ? d.hostname : 'Não detectado'}</p>
+                    <p><strong>Sistema Operacional:</strong> ${d.os} (Família: ${d.os_details.family}, Geração: ${d.os_details.generation}, Precisão: ${d.os_details.accuracy || 'N/A'}%)</p>
+                    <p><strong>Status:</strong> ${d.status}</p>
+                    <p><strong>Vulnerabilidades Encontradas:</strong> ${d.total_cves}</p>
+                    ${servicesHtml}
+                `;
+                showModal(`Detalhes do Ativo: ${d.id}`, '', details, false); // Exibe o modal.
+            });
+
+
+        node.append("text")
+            .attr("dy", d => Math.min(30, 10 + d.total_cves * 0.5) + 10) // Posiciona o texto abaixo do círculo.
+            .text(d => d.name); // Exibe o IP como texto do nó.
+
+        simulation
+            .nodes(nodes) // Associa os nós à simulação de força.
+            .on("tick", ticked); // Chama a função ticked em cada passo da simulação.
+
+        simulation.force("link")
+            .links(links); // Associa os links à simulação de força.
+
+        // Função de tick: atualiza as posições de nós e links em cada iteração da simulação.
+        function ticked() {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("transform", d => `translate(${d.x},${d.y})`); // Move os grupos de nó para as posições calculadas.
+        }
+
+        // Funções de arrasto para os nós (para que o usuário possa mover os nós).
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart(); // "Esquenta" a simulação ao iniciar o arrasto.
+            d.fx = d.x; // Fixa a posição X inicial.
+            d.fy = d.y; // Fixa a posição Y inicial.
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x; // Atualiza a posição fixa do nó durante o arrasto.
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0); // "Esfria" a simulação ao terminar o arrasto.
+            d.fx = null; // Libera a posição fixa para que o nó volte a ser afetado pelas forças.
+            d.fy = null;
+        }
+    }
+
+    // --- Recomendações (Aba 4) ---
+    /**
+     * Exibe uma lista de recomendações de mitigação com base nas vulnerabilidades detectadas.
+     * Inclui um navbar de IPs para filtrar as recomendações.
+     * @param {Array<Object>} vulnerabilities - Lista de vulnerabilidades únicas.
+     */
+    function displayRecommendations(vulnerabilities) {
+        const listDiv = document.getElementById('recommendations-list');
+        listDiv.innerHTML = ''; // Limpa a lista existente.
+
+        const ipNavbar = document.getElementById('recommendations-ip-navbar'); // NOVO: Elemento para o navbar de IP.
+        ipNavbar.innerHTML = ''; // Limpa o navbar.
+
+        if (vulnerabilities.length === 0) {
+            listDiv.innerHTML = '<p style="text-align: center; color: var(--gray-600);">Nenhuma recomendação disponível (nenhuma vulnerabilidade detectada).</p>';
+            return;
+        }
+
+        // 1. Criar o Navbar de IPs para Recomendações (similar às outras abas).
+        const uniqueIps = new Set();
+        vulnerabilities.forEach(vuln => {
+            vuln.affected_ips.forEach(ip => uniqueIps.add(ip));
+        });
+        const sortedIps = Array.from(uniqueIps).sort((a, b) => {
+            const ipToNum = ip => ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0);
+            return ipToNum(a) - ipToNum(b);
+        });
+
+        // Botão "Todos os IPs".
+        const allIpButton = document.createElement('button');
+        allIpButton.textContent = 'Todos os IPs';
+        allIpButton.className = `ip-button ${currentRecommendationsFilterIp === 'all' ? 'active' : ''}`;
+        allIpButton.addEventListener('click', () => {
+            currentRecommendationsFilterIp = 'all'; // Atualiza o estado do filtro.
+            displayRecommendations(globalUniqueVulnerabilities); // Re-renderiza com todas as recomendações.
+        });
+        ipNavbar.appendChild(allIpButton);
+
+        // Botões para cada IP único.
+        sortedIps.forEach(ip => {
+            const button = document.createElement('button');
+            button.textContent = ip;
+            button.className = `ip-button ${currentRecommendationsFilterIp === ip ? 'active' : ''}`;
+            button.addEventListener('click', () => {
+                currentRecommendationsFilterIp = ip; // Atualiza o estado do filtro.
+                displayRecommendations(globalUniqueVulnerabilities); // Re-renderiza com o filtro de IP.
+            });
+            ipNavbar.appendChild(button);
+        });
+
+        // 2. Filtrar recomendações com base no IP selecionado.
+        const filteredVulnerabilities = vulnerabilities.filter(vuln => {
+            return currentRecommendationsFilterIp === 'all' || vuln.affected_ips.includes(currentRecommendationsFilterIp);
+        });
+
+        if (filteredVulnerabilities.length === 0) {
+            listDiv.innerHTML = '<p style="text-align: center; color: var(--gray-600);">Nenhuma recomendação encontrada para o IP selecionado.</p>';
+            return;
+        }
+
+        const uniqueRecommendationsMap = {}; // Mapa para armazenar recomendações únicas.
+
+        // Gera recomendações baseadas nas vulnerabilidades filtradas.
+        filteredVulnerabilities.forEach(vuln => { // Usar filteredVulnerabilities.
+            let serviceName = 'Software Genérico';
+            if (vuln.affected_service) {
+                // Tenta extrair o nome do serviço da string 'affected_service'.
+                const match = vuln.affected_service.match(/^([^\s(]+)/);
+                if (match && match[1]) {
+                    serviceName = match[1];
+                } else {
+                    serviceName = vuln.affected_service;
+                }
+            }
+
+            let recommendationTitle = `Recomendação para ${serviceName}: Atualizar Software`;
+            let recommendationDescription = 'Atualize o software afetado para a versão mais recente e aplique todos os patches de segurança.';
+            let category = vuln.severity; // A categoria inicial da recomendação é a severidade da CVE.
+            
+            // Recomendações específicas para CVEs ou serviços conhecidos.
+            if (vuln.cve_id.includes('Log4Shell') || vuln.cve_id.includes('CVE-2021-44228')) {
+                recommendationTitle = 'Atualizar Apache Log4j (Log4Shell)';
+                recommendationDescription = 'Atualize o Apache Log4j para a versão 2.17.0 ou superior em todos os servidores afetados. Verifique todos os serviços que usam Log4j. Bloqueie o tráfego de saída desnecessário. Implemente um WAF (Web Application Firewall).';
+                category = 'critical'; // Força a categoria para crítica.
+            } else if (vuln.affected_service.includes('OpenSSH')) {
+                recommendationTitle = 'Atualizar OpenSSH e Fortalecer Configurações';
+                recommendationDescription = 'Atualize o OpenSSH para a versão mais recente e desative métodos de autenticação fracos. Use autenticação baseada em chave SSH, desative login de root direto, limite tentativas de login e configure firewalls para permitir acesso apenas de IPs confiáveis.';
+                category = 'high';
+            } else if (vuln.affected_service.includes('Apache httpd')) {
+                recommendationTitle = 'Manter Apache HTTPd Atualizado e Seguro';
+                recommendationDescription = 'Mantenha o servidor Apache HTTPd atualizado e revise as configurações de segurança (ex: desativar diretórios listáveis, configurar TLS/SSL, usar um firewall de aplicação web, aplicar o princípio do menor privilégio).';
+                category = 'medium';
+            } else if (vuln.port === 445 || vuln.affected_service.includes('SMB')) { 
+                recommendationTitle = 'Restringir Acesso à Porta SMB (445)';
+                recommendationDescription = 'Restrinja o acesso à porta SMB (445) apenas para IPs confiáveis. Crie regras de firewall para bloquear o acesso externo. Garanta que o SMBv1 esteja desativado em todos os sistemas operacionais. Use o SMBv2 ou SMBv3 com criptografia.';
+                category = 'high';
+            } else if (vuln.cve_id !== 'Detalhes não puderam ser obtidos do NVD.' && vuln.severity !== 'unknown') {
+                recommendationTitle = `Aplicar Patch para ${vuln.cve_id}`;
+                recommendationDescription = `Revisar e aplicar patches de segurança para a vulnerabilidade ${vuln.cve_id} no serviço afetado (${vuln.affected_service}). Consulte as referências oficiais do vendor para passos específicos de mitigação.`;
+            }
+
+            // Agrupa recomendações semelhantes.
+            const key = recommendationTitle; // Usa o título como chave para identificar recomendações únicas.
+            if (!uniqueRecommendationsMap[key]) {
+                uniqueRecommendationsMap[key] = {
+                    title: recommendationTitle,
+                    description: recommendationDescription,
+                    category: category,
+                    affected_ips: new Set() // Usa um Set para garantir IPs únicos.
+                };
+            }
+            vuln.affected_ips.forEach(ip => uniqueRecommendationsMap[key].affected_ips.add(ip));
+        });
+
+        // Classifica as recomendações por categoria de severidade.
+        const severityOrder = { 'critical': 5, 'high': 4, 'medium': 3, 'low': 2, 'unknown': 1 };
+        const sortedRecommendations = Object.values(uniqueRecommendationsMap).sort((a, b) => {
+            return severityOrder[b.category] - severityOrder[a.category];
+        });
+
+        // Renderiza cada recomendação na lista.
+        sortedRecommendations.forEach(rec => {
+            const item = document.createElement('div');
+            item.className = 'recommendation-item';
+            const displayCategory = rec.category.charAt(0).toUpperCase() + rec.category.slice(1);
+            item.innerHTML = `
+                <div class="recommendation-info">
+                    <h4>${rec.title}</h4>
+                    <p>${rec.description}</p>
+                    <p>Dispositivos afetados: <strong>${Array.from(rec.affected_ips).join(', ')}</strong></p>
+                </div>
+                <span class="severity-badge ${rec.category}">${displayCategory}</span>
+                <button class="btn btn-secondary btn-sm mark-as-resolved-btn">Marcar como Resolvido</button>
+            `;
+            listDiv.appendChild(item);
+        });
+
+        // Adiciona event listeners para os botões "Marcar como Resolvido".
+        document.querySelectorAll('.mark-as-resolved-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove o item da lista ao ser clicado. (Nota: esta é uma remoção apenas visual, não persistente).
+                this.closest('.recommendation-item').remove();
+            });
+        });
+    }
+
+    // --- Lógica de Abas (Alternar entre Resumo, Vulnerabilidades, Mapa, Recomendações) ---
+    // Adiciona event listeners a todos os botões de aba.
+    document.querySelectorAll('.tabs .tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const tabId = this.dataset.tab; // Obtém o ID da aba do atributo 'data-tab'.
+            activateTab(tabId); // Ativa a aba clicada.
+        });
+    });
+
+    /**
+     * Ativa uma aba específica e garante que o conteúdo correto seja exibido e, se necessário, redesenhado.
+     * @param {string} tabId - O ID da aba a ser ativada (ex: 'summary-tab', 'asset-map-tab').
+     */
+    function activateTab(tabId) {
+        // Remove a classe 'active' de todos os botões e conteúdos de aba.
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        // Adiciona a classe 'active' ao botão e conteúdo da aba selecionada.
+        document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+
+        // Lógica específica para redesenhar/atualizar conteúdo quando uma aba é ativada.
+        if (tabId === 'asset-map-tab' && globalScanResults.length > 0) {
+            // Atraso para garantir que o SVG tenha dimensões corretas antes de desenhar.
+            setTimeout(() => displayAssetMap(globalScanResults), 50);
+        } else if (tabId === 'vulnerabilities-tab' && globalUniqueVulnerabilities.length > 0) {
+            // Redesenha a lista de vulnerabilidades com o filtro de IP atual.
+            displayVulnerabilities(globalUniqueVulnerabilities, currentVulnerabilityFilterIp);
+        } else if (tabId === 'recommendations-tab' && globalUniqueVulnerabilities.length > 0) { // NOVO: Ativação para recomendações.
+            // Redesenha a lista de recomendações com o filtro de IP atual.
+            displayRecommendations(globalUniqueVulnerabilities);
+        }
+    }
+
+    // --- Lógica de Opções de Formulário (Seleção de Velocidade, Portas, OS Detection) ---
+    // Adiciona event listeners para as opções de velocidade de scan.
+    document.querySelectorAll('.scan-option[data-speed]').forEach(option => {
+        option.addEventListener('click', function() {
+            // Remove 'selected' de todas as opções de velocidade e adiciona ao clicado.
+            document.querySelectorAll('.scan-option[data-speed]').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Adiciona event listeners para as opções de portas de scan.
+    document.querySelectorAll('.scan-option[data-ports]').forEach(option => {
+        option.addEventListener('click', function() {
+            // Remove 'selected' de todas as opções de portas e adiciona ao clicado.
+            document.querySelectorAll('.scan-option[data-ports]').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Adiciona event listener para a opção de detecção de OS (alternar seleção).
+    document.getElementById('os-detection').addEventListener('click', function() {
+        this.classList.toggle('selected'); // Adiciona/remove a classe 'selected'.
+    });
+
+    // Lógica para o botão "Limpar" do formulário de scan.
+    document.querySelector('button[type="reset"]').addEventListener('click', function() {
+        // Remove todas as seleções de opções.
+        document.querySelectorAll('.scan-option').forEach(opt => opt.classList.remove('selected'));
+        // Redefine as opções padrão para velocidade e portas.
+        document.querySelector('.scan-option[data-speed="T5"]').classList.add('selected');
+        document.querySelector('.scan-option[data-ports="top_100"]').classList.add('selected');
+        document.getElementById('os-detection').classList.remove('selected');
+        
+        // Oculta o cartão de resultados.
+        document.getElementById('results-card').style.display = 'none';
+
+        // Limpa as listas de resultados e as navbars de IP.
+        document.getElementById('vulnerabilities-list').innerHTML = '';
+        document.getElementById('vulnerabilities-ip-navbar').innerHTML = '';
+        document.getElementById('recommendations-list').innerHTML = '';
+        document.getElementById('recommendations-ip-navbar').innerHTML = ''; // NOVO: Limpa a navbar de recomendações.
+
+        // Reseta as contagens de vulnerabilidades e dispositivos para zero.
+        document.getElementById('count-critical').textContent = '0';
+        document.getElementById('count-high').textContent = '0';
+        document.getElementById('count-medium').textContent = '0';
+        document.getElementById('count-low').textContent = '0';
+        document.getElementById('count-unknown').textContent = '0';
+        document.getElementById('count-total-devices').textContent = '0';
+        document.getElementById('count-servers').textContent = '0';
+        document.getElementById('count-workstations').textContent = '0';
+        document.getElementById('count-iot').textContent = '0';
+        
+        // Destrói a instância do gráfico Chart.js se existir.
+        if (vulnerabilityChartInstance) {
+            vulnerabilityChartInstance.destroy();
+            vulnerabilityChartInstance = null;
+        }
+
+        d3.select("#asset-map-svg").html(''); // Limpa o mapa de ativos SVG.
+    });
+
+    // --- Lógica do Dropdown de Perfil e Logout ---
+    // Abre/fecha o dropdown de perfil ao clicar no botão.
+    document.getElementById('userDropdown').addEventListener('click', function() {
+        const dropdownContent = document.getElementById('dropdownContent');
+        dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Fecha o dropdown de perfil se clicar em qualquer lugar fora dele.
+    window.addEventListener('click', function(event) {
+        if (!event.target.matches('.dropbtn')) {
+            const dropdowns = document.getElementsByClassName('dropdown-content');
+            for (let i = 0; i < dropdowns.length; i++) {
+                const openDropdown = dropdowns[i];
+                if (openDropdown.style.display === 'block') {
+                    openDropdown.style.display = 'none';
+                }
+            }
+        }
+    });
+
+    // Lógica para o botão de logout (funcionalidade ainda não implementada no backend).
+    document.getElementById('logoutButton').addEventListener('click', function() {
+        showModal('Logout', 'Funcionalidade não implementada.', '', true); // Exibe um modal informativo.
+    });
+
+    </script>
+
+</body>
+</html>
